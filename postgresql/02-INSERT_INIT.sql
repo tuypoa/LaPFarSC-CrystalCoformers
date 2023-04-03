@@ -44,25 +44,41 @@ INSERT INTO infofarmaco(codigo,nome,tipoinfo_codigo) values
 INSERT INTO tipoarquivo(codigo,nome) values 
   (1, 'Enviado');
 
+INSERT INTO comando(codigo,cmdtemplate,cmdprefixo) values  
+  (1,'java -jar @JARPATH @ARG SLAVE &','java'),
+  (2,'mpirun -np @NCPU pw.x -in @QEARQIN > @QEARQOUT &','mpirun'), 
+  (3,'pw.x -in @QEARQIN > @QEARQOUT &','pw.x');
+  
 INSERT INTO infomaquina(codigo,nome) values 
   (1,'IP'),(2,'Usuário'),(3,'Senha'),(4,'CPU Total'), 
-  (5,'CPU Disponível'),(6,'RootPath'),(7,'JAR');
+  (5,'CPU MPI'),(6,'Root Work Path'),(7,'% CPU Ociosa'),(8,'$JAVA_HOME');
   
-INSERT INTO maquina(codigo,nome,ignorar) values 
-  (1,'Anguirel',false),(2,'Anglachel',false),(3,'Gurthang',false),(4,'Tiamat',true);
+  
+/**
+INSERT INTO maquina(codigo,nome,head,ignorar) values 
+  (1,'Anguirel',true,false),(2,'Anglachel',false,false),
+  (3,'Gurthang',false,false),(4,'Tiamat',false,true);
 
 SELECT setval('maquina_codigo_seq', 4);
 
 INSERT INTO maquina_infomaquina(maquina_codigo,infomaquina_codigo,valor) values
-  (1,1,'192.168.0.102'),(1,2,'lapfarsc'),(1,3,'senha'),(1,4,'8'),(1,5,'4'),(1,6,'/home/lapfarsc/Documentos/Guilherme/CrystalCoformers/'),(1,7,'LaPFarSC_CrystalCoformers_v0.1.0.jar'),
-  (2,1,'192.168.0.108'),(2,2,'farmacia'),(2,3,'labsala18'),(2,4,'8'),(2,5,'8'),(2,6,'/home/farmacia/Documentos/Guilherme/CrystalCoformers/'),(2,7,'LaPFarSC_CrystalCoformers_v0.1.0.jar'),
-  (3,1,'192.168.0.104'),(3,2,'farmacia'),(3,3,'labsala18'),(3,4,'12'),(3,5,'12'),(3,6,'/home/farmacia/Documentos/Guilherme/CrystalCoformers/'),(3,7,'LaPFarSC_CrystalCoformers_v0.1.0.jar');
+  (1,1,'192.168.0.102'),(1,2,'lapfarsc'),(1,3,'senha'),(1,4,'8'),(1,5,'4'),(1,6,'/home/lapfarsc/Documentos/Guilherme/'),(1,7,'50'),
+  (2,1,'192.168.0.108'),(2,2,'farmacia'),(2,3,'labsala18'),(2,4,'8'),(2,5,'8'),(2,6,'/home/farmacia/Documentos/Guilherme/'),(2,7,'50'),
+  (3,1,'192.168.0.104'),(3,2,'farmacia'),(3,3,'labsala18'),(3,4,'12'),(3,5,'12'),(3,6,'/home/farmacia/Documentos/Guilherme/'),(3,7,'50');
   
-INSERT INTO comando(codigo,cmdtemplate,cmdprefixo) values  
-  (1,'java -jar @JARPATH @ARG &','java'),
-  (2,'mpirun -np @NCPU pw.x -in @QEARQIN > @QEARQOUT &','mpirun'), 
-  (3,'pw.x -in @QEARQIN > @QEARQOUT &','pw.x');
+
+INSERT INTO maquina(codigo,hostname,head,ignorar) values
+  (1,'Debian',true,false);
+SELECT setval('maquina_codigo_seq', 1);
+INSERT INTO maquina_infomaquina(maquina_codigo,infomaquina_codigo,valor) values
+  (1,1,'127.0.0.1'),(1,2,'tuy'),(1,3,'senha'),(1,4,'8'),(1,5,'4'),(1,6,'/home/tuy/Desktop/Guilherme/Farmacia/LaPFarSC/'),(1,7,'50'),(1,8,'/usr/lib/jvm/java-17-openjdk-amd64/');
+
+
+*/
   
+INSERT INTO javadeploy(maquina_codigo,versao,path) values (1,'v0.1.0','bin/java-CrystalCoformers_v0.1.0.jar');
+
+
   
 /*  FIM */
 

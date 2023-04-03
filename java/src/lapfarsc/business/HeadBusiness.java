@@ -5,18 +5,15 @@
  */
 package lapfarsc.business;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.net.NoRouteToHostException;
-import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.List;
-
-import lapfarsc.qe.dashboard.dto.CmdTopDTO;
-import lapfarsc.qe.dashboard.dto.ComandoDTO;
-import lapfarsc.qe.dashboard.dto.MaquinaDTO;
-import lapfarsc.qe.dashboard.util.Dominios.ArgTypeEnum;
-import lapfarsc.qe.dashboard.util.Dominios.ComandoEnum;
 
 import com.jcraft.jsch.Channel;
 import com.jcraft.jsch.ChannelExec;
@@ -24,52 +21,88 @@ import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
 
+import lapfarsc.dto.CmdTopDTO;
+import lapfarsc.dto.ComandoDTO;
+import lapfarsc.dto.JavaDeployDTO;
+import lapfarsc.dto.MaquinaDTO;
+import lapfarsc.dto.MaquinaStatusDTO;
+import lapfarsc.util.Dominios.ComandoEnum;
+import lapfarsc.util.Dominios.InfoMaquinaEnum;
+
 
 public class HeadBusiness {
 	
 	private DatabaseBusiness db = null;
+	private MaquinaDTO maquinaHead = null;
 	private List<MaquinaDTO> listMaquinaDTO = null;
 	
-	public HeadBusiness(Connection conn){
-		this.db = new DatabaseBusiness(conn);
+	public HeadBusiness(DatabaseBusiness db, MaquinaDTO maquinaDTO){
+		this.db = db;
+		this.maquinaHead = maquinaDTO;
 	}
 	
-	public void acessarTodasMaquinas() throws Exception {
-		this.listMaquinaDTO = db.selectListMaquinaDTO();
-		List<MaquinaDTO> atualiza = new ArrayList<MaquinaDTO>(); 
-		for (MaquinaDTO maqDTO : listMaquinaDTO) {			
+	public void fazerJavaDeploy(JavaDeployDTO ultimoDeploy) throws Exception {
+		this.listMaquinaDTO = db.selectListMaquinaDTOParaJavaDeploy(ultimoDeploy.getCodigo());
+		List<MaquinaDTO> atualiza = new ArrayList<MaquinaDTO>();
+		for (MaquinaDTO maqDTO : listMaquinaDTO) {
+			maqDTO.setInfoMaquina(db.selectListMaquinaInfoDTO( maqDTO.getCodigo() ));
+			if(scpTransferirJavaDeploy(maqDTO, ultimoDeploy)) {
+				atualiza.add( maqDTO );
+			}
+		}	
+		db.incluirJavaDeployMaquinaDTO(ultimoDeploy.getCodigo(), atualiza);
+	}
+	
+	
+	public void acessarTodasMaquinas(JavaDeployDTO ultimoDeploy) throws Exception {
+		this.listMaquinaDTO = db.selectListMaquinaDTOElegivel(ultimoDeploy.getCodigo());
+		List<MaquinaStatusDTO> atualiza = new ArrayList<MaquinaStatusDTO>(); 
+		for (MaquinaDTO maqDTO : listMaquinaDTO) {
+			maqDTO.setInfoMaquina(db.selectListMaquinaInfoDTO( maqDTO.getCodigo() ));
 			atualiza.add( sshInicialMaquinaDTO(maqDTO) );
-		}		
-		db.updateOfflineTodasMaquinasDTO();		
-		db.updateOnlineMaquinasDTO(atualiza);		
+		}
+		db.incluirMaquinaStatusDTO(atualiza);	
 	}
 	
 		
-	private MaquinaDTO sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{
+	private MaquinaStatusDTO sshInicialMaquinaDTO(MaquinaDTO maqDTO) throws Exception{
 		Session session = null;
 		Channel channel = null;
+		MaquinaStatusDTO statusDTO = new MaquinaStatusDTO();
+		statusDTO.setMaquinaCodigo(maqDTO.getCodigo());
+		statusDTO.setOnline( Boolean.FALSE );
 		try{				
-			session = getSessionSSH(maqDTO.getSsh(), maqDTO.getSenha());
+			session = getSessionSSH(
+						maqDTO.getInfoMaquina().get(InfoMaquinaEnum.USUARIO).getValor(),
+						maqDTO.getInfoMaquina().get(InfoMaquinaEnum.IP).getValor(), 
+						maqDTO.getInfoMaquina().get(InfoMaquinaEnum.SENHA).getValor());
 			session.connect();
 			
-			System.out.println(maqDTO.getSsh()+"> SSH OK");
-			maqDTO.setOnline( Boolean.TRUE );
+			System.out.println(maqDTO.getHostname()+"> SSH OK");
+			statusDTO.setOnline( Boolean.TRUE );
 			
 			String cmd = null;
-			//acionamento do SLAVE1 para as maquinas ON
-			if(maqDTO.getOnline() && !maqDTO.getIgnorar()){
+			//acionamento do SLAVE para as maquinas ON
+			if(!maqDTO.getIgnorar()){
 				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
-				if(comandoDTO==null){
-					return maqDTO;
-				}
+				
 				cmd = comandoDTO.getTemplate();
 				//java -jar @JARPATH @ARG &
-				cmd = cmd.replace("@JARPATH", maqDTO.getJarPath());
-				cmd = cmd.replace("@ARG", ArgTypeEnum.SLAVE1.getArg()+" "+maqDTO.getCodigo());
+				String rootPath = maqDTO.getInfoMaquina().get(InfoMaquinaEnum.ROOT_WORK_PATH).getValor();
+				if(!rootPath.endsWith("/")) {
+					rootPath += "/";
+				}
+				cmd = cmd.replace("@JARPATH", rootPath+maqDTO.getJavaDeployDTO().getPath());
+				cmd = cmd.replace("@ARG", maquinaHead.getInfoMaquina().get(InfoMaquinaEnum.IP).getValor()); //DATABASE IP = HEAD IP
+				if(maqDTO.getInfoMaquina().get(InfoMaquinaEnum.JAVA_HOME)!=null) {
+					cmd = maqDTO.getInfoMaquina().get(InfoMaquinaEnum.JAVA_HOME).getValor()+ "bin/" + cmd;
+				}
 			}
 			
+			//System.out.println(cmd);
+			
 			String[] commands = new String[]{
-					db.verificarMaquinaCPUOciosa(maqDTO.getCodigo())? "top -b1 |grep Cpu" : "top -bn1 |grep Cpu",
+					"top -bn1 |grep Cpu",
 					"top -bn1 |grep Mem" ,
 					cmd
 			};
@@ -108,22 +141,22 @@ public class HeadBusiness {
 				z++;
 			}			
 			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
-			maqDTO.setCpuUsed( cmdDTO.getCpuUsed() );
-			maqDTO.setMemUsed( cmdDTO.getMemUsed() );
+			statusDTO.setCpuUsed( cmdDTO.getCpuUsed() );
+			statusDTO.setMemUsed( cmdDTO.getMemUsed() );
 			
 		} catch (Throwable e) {
 			if(e.getCause() instanceof NoRouteToHostException){
-				maqDTO.setOnline( Boolean.FALSE );
-				System.out.println(maqDTO.getSsh()+"> OFFLINE: "+e.getCause());
+				statusDTO.setOnline( Boolean.FALSE );
+				System.out.println(maqDTO.getHostname()+"> OFFLINE: "+e.getCause());
 			}else{
-				System.out.println(maqDTO.getSsh()+"> ERRO: "+e.getCause());
+				System.out.println(maqDTO.getHostname()+"> ERRO (Senha?): "+e.getCause());
 			}
 		}finally{
 			if(channel!=null && !channel.isClosed()) channel.disconnect();
 			if(session!=null) session.disconnect();
 		}
 		try{Thread.sleep(1000);}catch(Exception ee){}
-		return maqDTO;
+		return statusDTO;
 		//System.out.println(maqDTO.getSsh()+"> SSH DISCONNECTED: "+channel.getExitStatus());
 	}
 	
@@ -148,14 +181,13 @@ public class HeadBusiness {
 		return dto;
 	}
 
-	public static Session getSessionSSH(final String ssh, final String senha) throws Throwable {
+	public static Session getSessionSSH(final String usuario,final String ip, final String senha) throws Throwable {
 		JSch jsch = new JSch();
-		String sshsp[] = ssh.split("@");
-		Session session = jsch.getSession(sshsp[0], sshsp[1], 22);
+		Session session = jsch.getSession(usuario, ip, 22);
 		UserInfo ui = new UserInfo() {
 			@Override
 			public void showMessage(String m) {
-				System.out.println(ssh+"> SSH CONNECTION MSG: "+ m);
+				System.out.println(usuario+"@"+ip+"> SSH CONNECTION MSG: "+ m);
 			}			
 			@Override
 			public boolean promptYesNo(String arg0) { return true; }
@@ -179,5 +211,150 @@ public class HeadBusiness {
 		return session;
 	}
 	
-		
+	
+	public boolean scpTransferirJavaDeploy(MaquinaDTO maqDTO, JavaDeployDTO ultimoDeploy) {
+		Session session = null;
+		Channel channel = null;
+		FileInputStream fis = null;
+		OutputStream out = null;
+	    InputStream in = null;
+		try {
+			session = getSessionSSH(
+					maqDTO.getInfoMaquina().get(InfoMaquinaEnum.USUARIO).getValor(),
+					maqDTO.getInfoMaquina().get(InfoMaquinaEnum.IP).getValor(), 
+					maqDTO.getInfoMaquina().get(InfoMaquinaEnum.SENHA).getValor());
+			session.connect();
+			
+			String origemPath = maquinaHead.getInfoMaquina().get(InfoMaquinaEnum.ROOT_WORK_PATH).getValor();
+			if(!origemPath.endsWith("/")) {
+				origemPath += "/";
+			}
+			String lfile = origemPath+ultimoDeploy.getPath().replace("bin/", "bin/javadeploy/");
+			
+			String destinoPath = maqDTO.getInfoMaquina().get(InfoMaquinaEnum.ROOT_WORK_PATH).getValor();
+			if(!destinoPath.endsWith("/")) {
+				destinoPath += "/";
+			}
+			String rfile = destinoPath+""+ultimoDeploy.getPath();
+			
+			File _lfile = new File(lfile);
+		    if(!_lfile.exists()) {
+		    	System.out.println(">> JavaDeploy JAR HEAD NOT FOUND: "+_lfile.getPath());
+		    	return false;
+		    }
+			
+			boolean ptimestamp = false;
+			rfile=rfile.replace("'", "'\"'\"'");
+			rfile="'"+rfile+"'";
+			String command="scp " + (ptimestamp ? "-p" :"") +" -t "+rfile;
+		    channel = session.openChannel("exec");
+		    ((ChannelExec)channel).setCommand(command);
+		    
+		    // get I/O streams for remote scp
+		    out = channel.getOutputStream();
+		    in = channel.getInputStream();
+
+		    channel.connect();
+
+		    if(checkAck(in)!=0){
+		    	return false;
+		    }
+		    
+		    if(ptimestamp){
+		    	command="T "+(_lfile.lastModified()/1000)+" 0";
+		    	// The access time should be sent here,
+		    	// but it is not accessible with JavaAPI ;-<
+		    	command+=(" "+(_lfile.lastModified()/1000)+" 0\n"); 
+		    	out.write(command.getBytes()); out.flush();
+		    	if(checkAck(in)!=0){
+		    		return false;
+		    	}
+		    }
+
+		    // send "C0644 filesize filename", where filename should not include '/'
+		    long filesize=_lfile.length();
+		    command="C0644 "+filesize+" ";
+		    if(lfile.lastIndexOf('/')>0){
+		    	command+=lfile.substring(lfile.lastIndexOf('/')+1);
+		    }
+		    else{
+		    	command+=lfile;
+		    }
+		    command+="\n";
+		    out.write(command.getBytes()); out.flush();
+		    if(checkAck(in)!=0){
+		    	return false;
+		    }
+
+		    // send a content of lfile
+		    fis = new FileInputStream(lfile);
+		    byte[] buf=new byte[1024];
+		    while(true){
+		    	int len=fis.read(buf, 0, buf.length);
+		    	if(len<=0) break;
+		    	out.write(buf, 0, len); //out.flush();
+		    }
+		    fis.close();
+		    fis=null;
+		    // send '\0'
+		    buf[0]=0; out.write(buf, 0, 1); out.flush();
+		    if(checkAck(in)!=0){
+		    	return false;
+		    }
+
+		    System.out.println(maqDTO.getHostname()+"> SCP javadeploy OK");
+			return true;
+		} catch (Throwable e) {
+			if(e.getCause() instanceof NoRouteToHostException){
+				System.out.println(maqDTO.getHostname()+"> OFFLINE javadeploy: "+e.getCause());
+			}else{
+				System.out.println(maqDTO.getHostname()+"> ERRO javadeploy (Senha?): "+e.getCause());
+			}
+			return false;
+		}finally{
+			if(out!=null) {
+				try {
+					out.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+			if(channel!=null && !channel.isClosed()) channel.disconnect();
+			if(session!=null) session.disconnect();
+			if(fis!=null) {
+				try {
+					fis.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+
+	private static int checkAck(InputStream in) throws IOException{
+		int b=in.read();
+		// b may be 0 for success,
+		//          1 for error,
+		//          2 for fatal error,
+		//          -1
+		if(b==0) return b;
+		if(b==-1) return b;
+
+		if(b==1 || b==2){
+			StringBuffer sb=new StringBuffer();
+			int c;
+			do {
+				c=in.read();
+				sb.append((char)c);
+			}
+			while(c!='\n');
+			if(b==1){ // error
+				System.out.print(sb.toString());
+			}
+			if(b==2){ // fatal error
+				System.out.print(sb.toString());
+			}
+		}
+		return b;
+	}
 }

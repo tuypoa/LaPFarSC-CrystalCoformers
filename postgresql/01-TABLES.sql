@@ -1,4 +1,5 @@
 /*
+DROP TABLE farmaco_historico;
 DROP TABLE farmaco_protocolo;
 DROP TABLE farmaco_infofarmaco;
 DROP TABLE farmaco_arquivo;
@@ -90,13 +91,7 @@ CREATE TABLE farmaco_infofarmaco (
   PRIMARY KEY (farmaco_codigo, infofarmaco_codigo)
 );
 
-CREATE TABLE farmaco_protocolo (
-  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
-  protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  etapa_codigo int NOT NULL REFERENCES etapa (codigo),
-  PRIMARY KEY (farmaco_codigo, protocolo_codigo)
-);
+
 
 CREATE TABLE arquivo (
   codigo serial NOT NULL PRIMARY KEY,
@@ -127,7 +122,8 @@ CREATE TABLE infomaquina (
 CREATE TABLE maquina (
   codigo serial NOT NULL PRIMARY KEY,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  nome varchar(50) NOT NULL,
+  hostname varchar(50) NOT NULL,
+  head boolean NOT NULL DEFAULT FALSE,
   ignorar boolean NOT NULL DEFAULT FALSE
 );
 
@@ -212,8 +208,27 @@ CREATE TABLE jarleitura (
   maquina_codigo int not null REFERENCES maquina (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-
 /*  */
+
+CREATE TABLE farmaco_protocolo (
+  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
+  protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  etapa_codigo int NOT NULL REFERENCES etapa (codigo),
+  jarleitura_codigo int REFERENCES jarleitura (codigo),
+  PRIMARY KEY (farmaco_codigo, protocolo_codigo)
+);
+
+
+CREATE TABLE farmaco_historico (
+  codigo serial NOT NULL PRIMARY KEY,
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
+  protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
+  etapa_codigo int NOT NULL REFERENCES etapa (codigo),
+  jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
+  tarefa_codigo int NOT NULL REFERENCES tarefa (codigo)
+);
 
 
 

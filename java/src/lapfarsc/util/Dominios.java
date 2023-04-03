@@ -1,16 +1,25 @@
-package lapfarsc.qe.dashboard.util;
+package lapfarsc.util;
 
 public class Dominios {
 	
-	public enum ArgTypeEnum{
-		HEAD("HEAD"),
-		SLAVE1("SLAVE1");
-		String arg;
-		ArgTypeEnum(String arg){this.arg=arg;}
-		public String getArg(){return this.arg;}
-		public static ArgTypeEnum getByName(String index){
-			for (ArgTypeEnum e : ArgTypeEnum.values()) {
-				if( e.arg.equals( index ) ){
+	/*
+	 * Table infomaquina;
+	 * */
+	public enum InfoMaquinaEnum{
+		IP(1),
+		USUARIO(2),
+		SENHA(3),
+		CPU_TOTAL(4),
+		CPU_MPI(5),
+		ROOT_WORK_PATH(6),
+		CPU_OCIOSA(7),
+		JAVA_HOME(8);
+		int index;
+		InfoMaquinaEnum(int index){this.index=index;}
+		public int getIndex(){return this.index;}
+		public static InfoMaquinaEnum getByIndex(int index){
+			for (InfoMaquinaEnum e : InfoMaquinaEnum.values()) {
+				if( e.index == index ){
 					return e;
 				}
 			}

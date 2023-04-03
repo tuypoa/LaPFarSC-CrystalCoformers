@@ -5,32 +5,40 @@
  */
 package lapfarsc.init;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.util.regex.Pattern;
 
+import lapfarsc.business.DatabaseBusiness;
 import lapfarsc.business.HeadBusiness;
-import lapfarsc.business.Slave1Business;
-import lapfarsc.util.Dominios.ArgTypeEnum;
+import lapfarsc.business.SlaveBusiness;
+import lapfarsc.dto.JavaDeployDTO;
+import lapfarsc.dto.MaquinaDTO;
 
 public class InitLocal {
 
-	//private static String POSTGRES_ADDRESS = "192.168.0.102:5432"; //TROCAR!!! Anguirel
-	private static String POSTGRES_ADDRESS = "localhost:5432"; //TROCAR!!!
-	public static String PATH_MONITORAMENTO = "05-quantum/PW-output/";
-	public static String PATH_PW_QUANTUM_ESPRESSO = "Documents/qe-7.0/bin/";
+	public static String DATABASENAME = "lapfarsc-crystalcoformers";
+	public static String DATABASEUSER = "postgres";
+	public static String DATABASEPWD = "postgres";
 	
 	public static void main(String[] args) throws Exception{
 		/*
 		 ARGS:
-		 0 = TIPO DE JAR (HEAD OU SLAVE1) 
+		 0 = Database IP (127.0.0.1 or 192.168.0.102)
+		 1 = (OPCIONAL) SLAVE
 		 */
 		if(args==null || args.length < 1) {
-			System.out.println("--> Arg0 IS REQUIRED.");
+			System.err.println("--> Arg0 IS REQUIRED: Database IP.");
 			return;
 		}
-		
-		ArgTypeEnum execType = ArgTypeEnum.getByName( args[0] );
-		if(execType != null){
+		String databaseAddress = args[0];
+		boolean isMatch = Pattern.compile("^(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$")
+	               .matcher(databaseAddress)
+	               .find(); 
+
+		if(isMatch) {
 			/*
 			//VERIFICAR SE JA ESTA EXECUTANDO
 			Runtime run = Runtime.getRuntime();
@@ -50,38 +58,67 @@ public class InitLocal {
 			}	
 			*/	
 			
+			boolean isSlave = false;
+			if(args.length > 1) {
+				isSlave = args[1].equals("SLAVE");
+			}
+			
 			//ACESSAR POSTGRES
-			String url = "jdbc:postgresql://"+POSTGRES_ADDRESS+"/dashboard4qe?user=postgres&password=postgres";
+			String url = "jdbc:postgresql://"+databaseAddress+"/"+DATABASENAME+"?user="+DATABASEUSER+"&password="+DATABASEPWD;
 			Connection conn = null;
 			try {
-				conn = DriverManager.getConnection(url);				
-				//iniciar tarefa
-				switch (execType) {
-				case HEAD:
-					HeadBusiness head = new HeadBusiness(conn);
-					head.acessarTodasMaquinas();						
-					break;
-				case SLAVE1:						
-					Slave1Business slave1 = new Slave1Business(conn, Integer.parseInt(args[1]));					
-					slave1.lerTodosProcessos();
-					//verificar execucoes que foram interrompidas, gerar continuacao
-					slave1.verificarProcessosInterrompidos();
-					//sempre depois de ler os processos em execucao
-					slave1.analisarTodosOutputs();
-					//verificar se esta ociosa
-					slave1.iniciarProcessos();					
-					break;						
-				default:
-					System.out.println("--> Arg0 NOT FOUND.");
-					break;
+				conn = DriverManager.getConnection(url);
+				DatabaseBusiness db = new DatabaseBusiness(conn);
+				
+				if(db.checkConexao()) {
+					String hostname = getHostname();
+					MaquinaDTO maquina = db.selectMaquinaDTOByHostname( hostname );
+					JavaDeployDTO ultimoDeploy = db.selectUltimoJavaDeployDTO();
+					
+					if(maquina!=null) {
+						maquina.setInfoMaquina(db.selectListMaquinaInfoDTO( maquina.getCodigo() ));
+						//iniciar tarefa
+						if(!isSlave && maquina.getHead()) {
+							HeadBusiness head = new HeadBusiness(db, maquina);
+							//verificar versao do JAR e fazer deploy
+							head.fazerJavaDeploy(ultimoDeploy);
+							head.acessarTodasMaquinas(ultimoDeploy);
+						}else{
+							SlaveBusiness slave = new SlaveBusiness(db, maquina);
+							if(maquina.getJavaDeployDTO()!=null && maquina.getJavaDeployDTO().getCodigo() == ultimoDeploy.getCodigo()) {
+								slave.gravarJarLeitura();
+								
+							}else {
+								System.err.println("--> Slave sem javadeploy atualizado: "+hostname);		
+							}
+						}
+					}else {
+						System.err.println("--> Hostname NOT FOUND: "+hostname);
+					}
+				}else {
+					System.err.println("--> Arg0 CONNECTION ERROR: Database IP "+args[0]);	
 				}
 			}finally{
 				if(conn!=null) conn.close();
-				System.out.println(execType.getArg() + " END");
 			}
-		}else{
-			System.out.println("--> Arg0 NOT FOUND.");
+		}else {
+			System.err.println("--> Arg0 IS INVALID: Database IP "+args[0]);
 		}
 		System.out.println("***");
 	}	
+	
+	
+	private static String getHostname() throws Exception {
+		Runtime run = Runtime.getRuntime();
+		Process pr = run.exec("hostname");
+		pr.waitFor();
+		BufferedReader buf = new BufferedReader(new InputStreamReader(pr.getInputStream()));
+		String line = "";
+		while ((line=buf.readLine())!=null) {
+			return line;
+		}	
+		return null;
+	}
+	
+	
 }
