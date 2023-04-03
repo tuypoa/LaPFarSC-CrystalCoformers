@@ -8,10 +8,10 @@ Project to collect and analyse data of drugs and their cocrystals using scientif
 $ sudo apt-get install php-pgsql php-gd
 $ sudo service apache2 restart
 </pre>
-3. Deploy JARs and check directories on db table "maquina"
+3. Deploy JARs and check directories on db table "maquina_infomaquina" and "javadeploy"
 4. Configure cron execution
 <pre>
 $ crontab -e
 # m h  dom mon dow   command
-*/15 * * * * java -jar /home/farmacia/Documentos/CrystalCoformers_v0.1.jar HEAD
+*/15 * * * * java -jar /home/farmacia/Documentos/Guilherme/bin/java-CrystalCoformers_v0.1.0.jar 127.0.0.1
 </pre>
