@@ -71,4 +71,22 @@ public class Dominios {
 		}
 	}
 	
+	public enum TipoMensagemDTOEnum{
+		OK(1),
+		ERRO(2),
+		EXCEPTION(3);
+		int index;
+		TipoMensagemDTOEnum(int index){this.index=index;}
+		public int getIndex(){return this.index;}
+		public static TipoMensagemDTOEnum getByIndex(int index){
+			for (TipoMensagemDTOEnum e : TipoMensagemDTOEnum.values()) {
+				if( e.index == index ){
+					return e;
+				}
+			}
+			return null;
+		}
+	}
+	
+	
 }

@@ -22,6 +22,7 @@ DROP TABLE maquina;
 DROP TABLE infomaquina;
 DROP TABLE secao;
 DROP TABLE tipoinfo;
+DROP TABLE tipomsg;
 */
 
 CREATE TABLE secao (
@@ -173,6 +174,11 @@ CREATE TABLE comando (
   cmdprefixo varchar(30) NOT NULL
 );
 
+CREATE TABLE tipomsg (
+  codigo smallint NOT NULL PRIMARY KEY,
+  nome varchar(100) NOT NULL
+);
+
 CREATE TABLE labjob ( /* java cria os jobs diferentes cenarios: 3 jobs */
   codigo serial NOT NULL PRIMARY KEY,
   jarleitura_codigo integer NOT NULL REFERENCES jarleitura (codigo),
@@ -184,8 +190,10 @@ CREATE TABLE labjob ( /* java cria os jobs diferentes cenarios: 3 jobs */
   jarleitura_verificado integer REFERENCES jarleitura (codigo), /** ps aux */
   pid bigint,
   interrompido timestamp,
-  executando boolean NOT NULL DEFAULT false,
-  concluido timestamp
+  executando boolean NOT NULL DEFAULT true,
+  concluido timestamp,
+  tipomsg_codigo smallint REFERENCES tipomsg (codigo),
+  msg varchar(150)
 );
 
 /* java verifica se os 3 jobs foram concluidos para tarefa ser dada como completada */
@@ -197,7 +205,9 @@ CREATE TABLE resultado (
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   resultpath varchar(150) NOT NULL,
-  digerido timestamp
+  digerido timestamp,
+  tipomsg_codigo smallint REFERENCES tipomsg (codigo),
+  msg varchar(150)
 );
 
 
@@ -209,6 +219,8 @@ CREATE TABLE farmaco_protocolo (
   tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
   disponivel timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   jarleitura_codigo int REFERENCES jarleitura (codigo), /** ticket */
+  tipomsg_codigo smallint REFERENCES tipomsg (codigo),
+  msg varchar(150),
   PRIMARY KEY (farmaco_codigo, protocolo_codigo)
 );
 
@@ -221,8 +233,7 @@ CREATE TABLE farmaco_historico (
   etapa_codigo int NOT NULL REFERENCES etapa (codigo),
   tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
-  resultado_codigo int REFERENCES resultado (codigo),
-  detalhes varchar(150) NOT NULL
+  resultado_codigo int REFERENCES resultado (codigo)
 );
 
 

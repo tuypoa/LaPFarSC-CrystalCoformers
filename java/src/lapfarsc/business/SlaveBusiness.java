@@ -26,15 +26,15 @@ public class SlaveBusiness {
 	public void verificarFarmacoProtocolo() throws Exception {
 		//pegar farmaco_protocolo sem jarleitura definido
 		FarmacoProtocoloDTO farmacoProtocoloDTO = db.selectFarmacoProtocoloDTODisponivel();
+		//atualizar jarleitura em farmaco_protocolo / pegar o ticket
+		farmacoProtocoloDTO.setJarLeituraCodigo(jarLeituraCodigo);
+		db.updateFarmacoProtocoloDTOJarLeitura(farmacoProtocoloDTO);
+		
 		if(farmacoProtocoloDTO!=null) {
 			//buscar tarefa 
 			TarefaBusiness tb = new TarefaBusiness(db, maquinaDTO, farmacoProtocoloDTO);
 			if(tb.verificarProcessoAutomatico()) {
-				//atualizar jarleitura em farmaco_protocolo / pegar o ticket
-				farmacoProtocoloDTO.setJarLeituraCodigo(jarLeituraCodigo);
-				if( tb.executarProcessoAutomatico() ) {
-					db.updateFarmacoProtocoloDTOJarLeitura(farmacoProtocoloDTO);
-				}
+				tb.iniciarProcessoAutomatico();
 			}
 		}
 	}

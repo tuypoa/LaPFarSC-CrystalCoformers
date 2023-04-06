@@ -44,6 +44,9 @@ INSERT INTO infofarmaco(codigo,nome,tipoinfo_codigo) values
 INSERT INTO tipoarquivo(codigo,nome) values 
   (1, 'Enviado'), (2, 'Otimizado MMFF94');
   
+INSERT INTO tipomsg(codigo,nome) values 
+  (1, 'OK'), (2, 'Erro'), (3,'Exception');
+  
 
 INSERT INTO comando(codigo,cmdtemplate,cmdprefixo) values  
   (1,'java -jar @JARPATH @ARG SLAVE &','java'),

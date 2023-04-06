@@ -1,13 +1,13 @@
 package lapfarsc.business;
 
+import lapfarsc.dto.MsgDTO;
+
 public interface TarefaExec {
 
-	public boolean executar(TarefaBusiness tb) throws Exception;
+	public MsgDTO prepararExecucao(TarefaBusiness tb);
 	
-	public void verificar(TarefaBusiness tb) throws Exception;
+	public MsgDTO verificarExecucao(TarefaBusiness tb);
 	
-	public void reiniciar(TarefaBusiness tb) throws Exception;
-	
-	public void concluir(TarefaBusiness tb) throws Exception;
+	public MsgDTO parseExecucao(TarefaBusiness tb);
 	
 }

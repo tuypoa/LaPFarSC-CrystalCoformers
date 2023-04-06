@@ -8,6 +8,8 @@ public class FarmacoProtocoloDTO {
 	private Integer tarefaCodigo;
 	private Integer jarLeituraCodigo;
 	
+	private MsgDTO msgDTO;
+	
 	public Integer getFarmacoCodigo() {
 		return farmacoCodigo;
 	}
@@ -37,6 +39,12 @@ public class FarmacoProtocoloDTO {
 	}
 	public void setJarLeituraCodigo(Integer jarLeituraCodigo) {
 		this.jarLeituraCodigo = jarLeituraCodigo;
+	}
+	public MsgDTO getMsgDTO() {
+		return msgDTO;
+	}
+	public void setMsgDTO(MsgDTO msgDTO) {
+		this.msgDTO = msgDTO;
 	}
 	
 	

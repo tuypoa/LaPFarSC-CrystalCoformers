@@ -238,6 +238,28 @@ public class DatabaseBusiness {
 		}
 	}
 
+	
+
+	/*
+	 * TABELA labjob
+	 */	
+	
+	public void incluirLabJob(Integer jarLeituraCodigo, Integer tarefaCodigo, Integer comandoCodigo, String cmdLog, String relativeWorkpath) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO labjob(jarleitura_codigo,tarefa_codigo,comando_codigo,comandos,workpath) values (?,?,?,?,?)");
+			int p = 1;
+			ps.setInt(p++, jarLeituraCodigo);
+			ps.setInt(p++, tarefaCodigo);
+			ps.setInt(p++, comandoCodigo);
+			ps.setString(p++, cmdLog);
+			ps.setString(p++, relativeWorkpath);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+	
 	/*
 	 * TABELA comando
 	 */	
@@ -448,9 +470,15 @@ public class DatabaseBusiness {
 	public void updateFarmacoProtocoloDTOJarLeitura(FarmacoProtocoloDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("UPDATE farmaco_protocolo SET jarleitura_codigo=? WHERE farmaco_codigo=? AND protocolo_codigo=?");
+			ps = conn.prepareStatement("UPDATE farmaco_protocolo SET jarleitura_codigo=? "+
+								(dto.getJarLeituraCodigo()==null?", disponivel=CURRENT_TIMESTAMP ":"")+ 
+								" WHERE farmaco_codigo=? AND protocolo_codigo=?");
 			int p = 1;
-			ps.setInt(p++, dto.getJarLeituraCodigo());
+			if(dto.getJarLeituraCodigo()==null) {
+				ps.setNull(p++, Types.NULL);
+			}else {
+				ps.setInt(p++, dto.getJarLeituraCodigo());
+			}
 			ps.setInt(p++, dto.getFarmacoCodigo());
 			ps.setInt(p++, dto.getProtocoloCodigo());
 			ps.executeUpdate();
@@ -458,7 +486,25 @@ public class DatabaseBusiness {
 			if(ps!=null) ps.close();
 		}
 	}	
-	
+	public void updateFarmacoProtocoloDTOMsgDTO(FarmacoProtocoloDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE farmaco_protocolo SET tipomsg_codigo=?,msg=SUBSTRING(? from 1 for 150) WHERE farmaco_codigo=? AND protocolo_codigo=?");
+			int p = 1;
+			if(dto.getMsgDTO()==null) {
+				ps.setNull(p++, Types.NULL);
+				ps.setNull(p++, Types.NULL);
+			}else {
+				ps.setInt(p++, dto.getMsgDTO().getTipo().getIndex());
+				ps.setString(p++, dto.getMsgDTO().getMsg()==null?"":dto.getMsgDTO().getMsg());
+			}
+			ps.setInt(p++, dto.getFarmacoCodigo());
+			ps.setInt(p++, dto.getProtocoloCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
 	
 	
 }
