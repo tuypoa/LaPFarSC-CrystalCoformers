@@ -3,7 +3,26 @@ package lapfarsc.util;
 public class Dominios {
 	
 	/*
-	 * Table infomaquina;
+	 * Table tipoarquivo
+	 * */
+	public enum TipoArquivoEnum{
+		ENVIADO(1),
+		OTIMIZADO_MMFF94(2);
+		int index;
+		TipoArquivoEnum(int index){this.index=index;}
+		public int getIndex(){return this.index;}
+		public static TipoArquivoEnum getByIndex(int index){
+			for (TipoArquivoEnum e : TipoArquivoEnum.values()) {
+				if( e.index == index ){
+					return e;
+				}
+			}
+			return null;
+		}
+	}
+	
+	/*
+	 * Table infomaquina
 	 * */
 	public enum InfoMaquinaEnum{
 		IP(1),
@@ -13,7 +32,8 @@ public class Dominios {
 		CPU_MPI(5),
 		ROOT_WORK_PATH(6),
 		CPU_OCIOSA(7),
-		JAVA_HOME(8);
+		JAVA_HOME(8),
+		MOPAC_HOME(9);
 		int index;
 		InfoMaquinaEnum(int index){this.index=index;}
 		public int getIndex(){return this.index;}
@@ -27,10 +47,17 @@ public class Dominios {
 		}
 	}
 	
+	
+	/*
+	 * Table comando
+	 * */
 	public enum ComandoEnum{
-		JAVA_JAR(1),
-		MPIRUN_PW(2),
-		PW(3);
+		JAVA_JAR_SLAVE(1),
+		MPIRUN_PWSCF(2),
+		PWSCF(3),
+		MOLCONVERT_MMFF94_FINE(4),
+		OBABEL_CONVERTFILE(5),
+		MOPAC(6);
 		int index;
 		ComandoEnum(int index){this.index=index;}
 		public int getIndex(){return this.index;}

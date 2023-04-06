@@ -71,6 +71,7 @@ public class HeadBusiness {
 		MaquinaStatusDTO statusDTO = new MaquinaStatusDTO();
 		statusDTO.setMaquinaCodigo(maqDTO.getCodigo());
 		statusDTO.setOnline( Boolean.FALSE );
+		statusDTO.setIniciarJob( Boolean.FALSE );
 		try{				
 			session = getSessionSSH(
 						maqDTO.getInfoMaquina().get(InfoMaquinaEnum.USUARIO).getValor(),
@@ -84,7 +85,7 @@ public class HeadBusiness {
 			String cmd = null;
 			//acionamento do SLAVE para as maquinas ON
 			if(!maqDTO.getIgnorar()){
-				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR.getIndex() );
+				ComandoDTO comandoDTO = db.selectComandoDTO( ComandoEnum.JAVA_JAR_SLAVE.getIndex() );
 				
 				cmd = comandoDTO.getTemplate();
 				//java -jar @JARPATH @ARG &
@@ -143,13 +144,16 @@ public class HeadBusiness {
 			CmdTopDTO cmdDTO = getCommandTopInfos(sb.toString());
 			statusDTO.setCpuUsed( cmdDTO.getCpuUsed() );
 			statusDTO.setMemUsed( cmdDTO.getMemUsed() );
-			
+			if(cmdDTO.getCpuUsed()!=null) {
+				statusDTO.setIniciarJob( statusDTO.getCpuUsed().doubleValue() <  Double.valueOf( maqDTO.getInfoMaquina().get(InfoMaquinaEnum.CPU_OCIOSA).getValor() ));
+			}
 		} catch (Throwable e) {
 			if(e.getCause() instanceof NoRouteToHostException){
 				statusDTO.setOnline( Boolean.FALSE );
 				System.out.println(maqDTO.getHostname()+"> OFFLINE: "+e.getCause());
 			}else{
 				System.out.println(maqDTO.getHostname()+"> ERRO (Senha?): "+e.getCause());
+				if(statusDTO.getOnline()) e.printStackTrace();
 			}
 		}finally{
 			if(channel!=null && !channel.isClosed()) channel.disconnect();

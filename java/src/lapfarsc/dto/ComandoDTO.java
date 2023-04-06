@@ -24,6 +24,5 @@ public class ComandoDTO {
 	public void setPrefixo(String prefixo) {
 		this.prefixo = prefixo;
 	}
-	
-	
+
 }

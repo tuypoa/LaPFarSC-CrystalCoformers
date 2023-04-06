@@ -16,6 +16,7 @@ import lapfarsc.business.HeadBusiness;
 import lapfarsc.business.SlaveBusiness;
 import lapfarsc.dto.JavaDeployDTO;
 import lapfarsc.dto.MaquinaDTO;
+import lapfarsc.dto.MaquinaStatusDTO;
 
 public class InitLocal {
 
@@ -77,7 +78,7 @@ public class InitLocal {
 					
 					if(maquina!=null) {
 						maquina.setInfoMaquina(db.selectListMaquinaInfoDTO( maquina.getCodigo() ));
-						//iniciar tarefa
+						
 						if(!isSlave && maquina.getHead()) {
 							HeadBusiness head = new HeadBusiness(db, maquina);
 							//verificar versao do JAR e fazer deploy
@@ -86,8 +87,19 @@ public class InitLocal {
 						}else{
 							SlaveBusiness slave = new SlaveBusiness(db, maquina);
 							if(maquina.getJavaDeployDTO()!=null && maquina.getJavaDeployDTO().getCodigo() == ultimoDeploy.getCodigo()) {
-								slave.gravarJarLeitura();
+								MaquinaStatusDTO ultimoStatusDTO = db.selectMaquinaStatusDTO(maquina.getCodigo());
+								slave.gravarJarLeitura(ultimoStatusDTO.getCodigo());
 								
+								//verificar comandos dessa maquina atraves do "ps aux"
+								//atualizar dados na tabela "labjob"
+								
+								
+								if(ultimoStatusDTO.getIniciarJob()) {
+									//verificar CPU novamente (?)
+									
+									slave.verificarFarmacoProtocolo();
+									
+								}
 							}else {
 								System.err.println("--> Slave sem javadeploy atualizado: "+hostname);		
 							}
