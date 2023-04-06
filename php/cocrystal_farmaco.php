@@ -46,11 +46,28 @@ if($farmaco_protocolo == null){
 	$p_protocolo = $_POST["farmaco_protocolo"];
 	if (isset($_POST["submit"]) && is_numeric($p_protocolo)) {
 
-		$stInsert = $con->prepare("INSERT INTO farmaco_protocolo(farmaco_codigo,protocolo_codigo,etapa_codigo) values (:farmaco,:protocolo,
-											(SELECT etapa.codigo FROM etapa WHERE etapa.protocolo_codigo=:protocolo ORDER BY etapa.ordem LIMIT 1)
-										)");
+		$query = "SELECT t.codigo, t.etapa_codigo 
+					FROM tarefa t 
+						INNER JOIN etapa e ON e.codigo=t.etapa_codigo
+					WHERE e.protocolo_codigo=:protocolo ORDER BY e.ordem, t.ordem LIMIT 1";
+		$stBusca = $con->prepare($query);	
+		$stBusca->bindParam(':protocolo', $p_protocolo, PDO::PARAM_INT);
+		$stBusca->execute();
+		$rsBusca = $stBusca->fetchAll(PDO::FETCH_ASSOC);
+		if(sizeof($rsBusca)>0){
+			$tarefa = $rsBusca[0];
+		}
+		unset($rsBusca);
+		$rsBusca = null;
+		$stBusca->closeCursor();
+		
+
+		$stInsert = $con->prepare("INSERT INTO farmaco_protocolo(farmaco_codigo,protocolo_codigo,etapa_codigo,tarefa_codigo) 
+										VALUES (:farmaco,:protocolo,:etapa,:tarefa)");
 		$stInsert->bindParam(":farmaco", $farmaco["codigo"], PDO::PARAM_INT);
 		$stInsert->bindParam(":protocolo", $p_protocolo, PDO::PARAM_INT);
+		$stInsert->bindParam(":etapa", $tarefa["etapa_codigo"], PDO::PARAM_INT);
+		$stInsert->bindParam(":tarefa", $tarefa["codigo"], PDO::PARAM_INT);
 		$exec = $stInsert->execute();
 		$stInsert->closeCursor();
 

@@ -57,7 +57,7 @@ $stBusca->closeCursor();
             }
             ?>				
             <li><?php echo $obj["t_nome"]; ?> <?php 
-                    if($obj["manual"]){ 
+                    if(!$obj["manual"]){ 
                         ?><i class="bi-robot" style="color: cornflowerblue;"></i><?php 
                     } ?><br><span style="color:#999999;"><?php echo $obj["descricao"]; ?></span></li>
             <?php

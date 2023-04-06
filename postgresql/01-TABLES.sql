@@ -7,7 +7,6 @@ DROP TABLE tipoarquivo;
 DROP TABLE arquivo;
 DROP TABLE resultado;
 DROP TABLE farmaco;
-DROP TABLE tarefa_comando;
 DROP TABLE labjob;
 DROP TABLE tarefa;
 DROP TABLE etapa;
@@ -29,6 +28,7 @@ CREATE TABLE secao (
   codigo int NOT NULL PRIMARY KEY ,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   nome varchar(50) NOT NULL,
+  rootpath varchar(50) NOT NULL,
   link varchar(50) NOT NULL,
   ordem integer NOT NULL,
   icon varchar(20) NOT NULL
@@ -59,6 +59,7 @@ CREATE TABLE tarefa (
   descricao text,  
   ordem integer NOT NULL,
   manual boolean NOT NULL DEFAULT FALSE,
+  javaclass varchar(100),
   etapa_codigo integer NOT NULL REFERENCES etapa (codigo),
   tarefa_codigo integer REFERENCES tarefa (codigo)
 );
@@ -91,8 +92,6 @@ CREATE TABLE farmaco_infofarmaco (
   PRIMARY KEY (farmaco_codigo, infofarmaco_codigo)
 );
 
-
-
 CREATE TABLE arquivo (
   codigo serial NOT NULL PRIMARY KEY,
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -109,9 +108,9 @@ CREATE TABLE tipoarquivo (
 CREATE TABLE farmaco_arquivo (
   farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
   arquivo_codigo int NOT NULL REFERENCES arquivo (codigo),
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   tipoarquivo_codigo int NOT NULL REFERENCES tipoarquivo (codigo),
-  PRIMARY KEY (farmaco_codigo, arquivo_codigo)
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (farmaco_codigo, arquivo_codigo, tipoarquivo_codigo)
 );
 
 CREATE TABLE infomaquina (
@@ -145,48 +144,6 @@ CREATE TABLE maquinastatus (
   memused numeric(5,2)
 );
 
-CREATE TABLE comando (
-  codigo int NOT NULL PRIMARY KEY,
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  cmdtemplate varchar(100) NOT NULL,
-  cmdprefixo varchar(30) NOT NULL
-);
-
-CREATE TABLE tarefa_comando (
-  tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
-  comando_codigo int NOT NULL REFERENCES comando (codigo),
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  PRIMARY KEY (tarefa_codigo, comando_codigo)
-);
-
-CREATE TABLE labjob ( /* java cria os jobs diferentes cenarios: 3 jobs */
-  codigo serial NOT NULL PRIMARY KEY,
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  maquina_codigo integer NOT NULL REFERENCES maquina (codigo),
-  tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
-  comando_codigo integer NOT NULL REFERENCES comando (codigo),
-  comando text NOT NULL,  
-  workpath varchar(150) NOT NULL,
-  verificado timestamp,
-  iniciado timestamp,
-  concluido timestamp
-);
-
-/* java verifica se os 3 jobs foram concluidos para tarefa ser dada como completada */
-CREATE TABLE resultado ( 
-  codigo serial NOT NULL PRIMARY KEY ,
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
-  protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
-  labjob_codigo integer REFERENCES labjob (codigo),
-  tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
-  resultpath varchar(150) NOT NULL,
-  digerido timestamp
-);
-
-
-/* estrutura do java */
-
 CREATE TABLE javadeploy (
   codigo serial NOT NULL PRIMARY KEY,
   maquina_codigo int not null REFERENCES maquina (codigo),
@@ -205,17 +162,53 @@ CREATE TABLE javadeploy_maquina (
 CREATE TABLE jarleitura (
   codigo serial NOT NULL PRIMARY KEY,
   javadeploy_codigo int not null REFERENCES javadeploy (codigo),
-  maquina_codigo int not null REFERENCES maquina (codigo),
+  maquinastatus_codigo int not null REFERENCES maquinastatus (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-/*  */
+
+CREATE TABLE comando (
+  codigo int NOT NULL PRIMARY KEY,
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  cmdtemplate varchar(100) NOT NULL,
+  cmdprefixo varchar(30) NOT NULL
+);
+
+CREATE TABLE labjob ( /* java cria os jobs diferentes cenarios: 3 jobs */
+  codigo serial NOT NULL PRIMARY KEY,
+  jarleitura_codigo integer NOT NULL REFERENCES jarleitura (codigo),
+  tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
+  comando_codigo integer NOT NULL REFERENCES comando (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  comandos text NOT NULL, 
+  workpath varchar(150) NOT NULL,
+  jarleitura_verificado integer REFERENCES jarleitura (codigo), /** ps aux */
+  pid bigint,
+  interrompido timestamp,
+  executando boolean NOT NULL DEFAULT false,
+  concluido timestamp
+);
+
+/* java verifica se os 3 jobs foram concluidos para tarefa ser dada como completada */
+CREATE TABLE resultado ( 
+  codigo serial NOT NULL PRIMARY KEY ,
+  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
+  protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
+  tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
+  jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  resultpath varchar(150) NOT NULL,
+  digerido timestamp
+);
+
 
 CREATE TABLE farmaco_protocolo (
   farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
   protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   etapa_codigo int NOT NULL REFERENCES etapa (codigo),
-  jarleitura_codigo int REFERENCES jarleitura (codigo),
+  tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
+  disponivel timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  jarleitura_codigo int REFERENCES jarleitura (codigo), /** ticket */
   PRIMARY KEY (farmaco_codigo, protocolo_codigo)
 );
 
@@ -226,9 +219,10 @@ CREATE TABLE farmaco_historico (
   farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
   protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
   etapa_codigo int NOT NULL REFERENCES etapa (codigo),
+  tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
-  tarefa_codigo int NOT NULL REFERENCES tarefa (codigo)
+  resultado_codigo int REFERENCES resultado (codigo),
+  detalhes varchar(150) NOT NULL
 );
-
 
 

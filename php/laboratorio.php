@@ -16,12 +16,12 @@ require_once("config/configuracao.php");
 <div class="row row-cols-1 row-cols-md-4 g-4">
         <?php
         $query = "
-            SELECT m.codigo, m.nome, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob,
+            SELECT m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob,
                 TO_CHAR(ms.datahora,'DD/MM/YY HH24:MI:SS') AS ultimoacesso
             FROM maquina m
                 LEFT JOIN maquinastatus ms ON m.codigo=ms.maquina_codigo
-            GROUP BY m.codigo, m.nome, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob, ms.datahora
-            ORDER BY ms.online, m.nome
+            GROUP BY m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob, ms.datahora
+            ORDER BY ms.online, m.hostname
             ";
 
         $stBusca = $con->prepare($query);	
@@ -34,7 +34,7 @@ require_once("config/configuracao.php");
                 ?>
                 <div class="col">
                     <div class="card border-<?php echo $obj["online"]?"success":"danger";?>" >
-                    <div class="card-header"><?php echo $obj["nome"]; ?></div>
+                    <div class="card-header"><?php echo $obj["hostname"]; ?></div>
                     <div class="card-body text-<?php echo $obj["online"]?"success":"danger";?>">
                         <p class="card-text">
                         <?php
