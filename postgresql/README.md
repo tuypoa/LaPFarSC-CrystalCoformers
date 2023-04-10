@@ -11,12 +11,12 @@ postgres$ psql
 
 3. Change access config 
 <pre>
-root# gedit /etc/postgresql/13/main/pg_hba.conf
+root# gedit /etc/postgresql/14/main/pg_hba.conf
 	# IPv4 local connections:
 	### ADD LINE: ###
 	host    all             all             all		        md5
 	
-root# gedit /etc/postgresql/13/main/postgresql.conf
+root# gedit /etc/postgresql/14/main/postgresql.conf
 	# - Connection Settings -
 	### CHANGE THIS LINE: ###
 	#FROM:

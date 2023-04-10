@@ -16,11 +16,17 @@ require_once("config/configuracao.php");
 <div class="row row-cols-1 row-cols-md-4 g-4">
         <?php
         $query = "
-            SELECT m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob,
+            SELECT m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online,
+                m.ignorar, ms.iniciarjob,
                 TO_CHAR(ms.datahora,'DD/MM/YY HH24:MI:SS') AS ultimoacesso
             FROM maquina m
-                LEFT JOIN maquinastatus ms ON m.codigo=ms.maquina_codigo
-            GROUP BY m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, m.ignorar, ms.iniciarjob, ms.datahora
+                LEFT JOIN 
+                    (SELECT MAX(codigo) as codigo, maquina_codigo 
+                        FROM maquinastatus 
+                        GROUP BY maquina_codigo) maxms ON m.codigo=maxms.maquina_codigo
+                LEFT JOIN maquinastatus ms ON maxms.codigo=ms.codigo		
+            GROUP BY m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, 
+                m.ignorar, ms.iniciarjob, ms.datahora
             ORDER BY ms.online, m.hostname
             ";
 

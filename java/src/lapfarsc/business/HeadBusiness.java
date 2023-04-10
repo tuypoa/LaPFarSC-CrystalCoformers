@@ -103,8 +103,8 @@ public class HeadBusiness {
 			//System.out.println(cmd);
 			
 			String[] commands = new String[]{
-					"top -bn1 |grep Cpu",
-					"top -bn1 |grep Mem" ,
+					"top -bn1 |grep -i Cpu",
+					"top -bn1 |grep -i Mem" ,
 					cmd
 			};
 			
@@ -177,7 +177,23 @@ public class HeadBusiness {
 		kw = "Mem";
 		kwid = cabecalho.indexOf(kw);
 		if(kwid!=-1){
-			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf("used",kwid+kw.length()) ).trim();
+			String usados = "usados";
+			if(cabecalho.indexOf("")==-1) {
+				usados = "used";
+			}
+			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf(usados,kwid+kw.length()) ).trim();
+			String memtot = info.substring(info.indexOf(":")+1, info.indexOf("total") );
+			String memused = info.substring( info.lastIndexOf(",")+4>info.length()? info.substring(0,info.length()-4).lastIndexOf(",")+1 : info.lastIndexOf(",")+1, info.length() );
+			dto.setMemUsed(BigDecimal.valueOf( 100*(Double.parseDouble( memused.replace(",", ".") ) / Double.parseDouble( memtot.replace(",", ".")) ) ) );
+		}
+		kw = "MB mem";
+		kwid = cabecalho.indexOf(kw);
+		if(kwid!=-1){
+			String usados = "usados";
+			if(cabecalho.indexOf("")==-1) {
+				usados = "used";
+			}
+			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf(usados,kwid+kw.length()) ).trim();
 			String memtot = info.substring(info.indexOf(":")+1, info.indexOf("total") );
 			String memused = info.substring( info.lastIndexOf(",")+4>info.length()? info.substring(0,info.length()-4).lastIndexOf(",")+1 : info.lastIndexOf(",")+1, info.length() );
 			dto.setMemUsed(BigDecimal.valueOf( 100*(Double.parseDouble( memused.replace(",", ".") ) / Double.parseDouble( memtot.replace(",", ".")) ) ) );
@@ -250,7 +266,7 @@ public class HeadBusiness {
 			boolean ptimestamp = false;
 			rfile=rfile.replace("'", "'\"'\"'");
 			rfile="'"+rfile+"'";
-			String command="scp " + (ptimestamp ? "-p" :"") +" -t "+rfile;
+			String command="mkdir -p "+destinoPath+"bin/ && scp " + (ptimestamp ? "-p" :"") +" -t "+rfile;
 		    channel = session.openChannel("exec");
 		    ((ChannelExec)channel).setCommand(command);
 		    
@@ -260,7 +276,9 @@ public class HeadBusiness {
 
 		    channel.connect();
 
-		    if(checkAck(in)!=0){
+		    String sbCheckAck = checkAck(in); 
+		    if(sbCheckAck!=null){
+		    	System.out.println(maqDTO.getHostname()+"> "+sbCheckAck);
 		    	return false;
 		    }
 		    
@@ -270,8 +288,9 @@ public class HeadBusiness {
 		    	// but it is not accessible with JavaAPI ;-<
 		    	command+=(" "+(_lfile.lastModified()/1000)+" 0\n"); 
 		    	out.write(command.getBytes()); out.flush();
-		    	if(checkAck(in)!=0){
-		    		return false;
+		    	sbCheckAck = checkAck(in); 
+			    if(sbCheckAck!=null){
+			    	return false;
 		    	}
 		    }
 
@@ -286,7 +305,9 @@ public class HeadBusiness {
 		    }
 		    command+="\n";
 		    out.write(command.getBytes()); out.flush();
-		    if(checkAck(in)!=0){
+		    sbCheckAck = checkAck(in);
+		    if(sbCheckAck!=null){
+		    	System.out.println(maqDTO.getHostname()+"> "+sbCheckAck);
 		    	return false;
 		    }
 
@@ -302,7 +323,9 @@ public class HeadBusiness {
 		    fis=null;
 		    // send '\0'
 		    buf[0]=0; out.write(buf, 0, 1); out.flush();
-		    if(checkAck(in)!=0){
+		    sbCheckAck = checkAck(in);
+		    if(sbCheckAck!=null){
+		    	System.out.println(maqDTO.getHostname()+"> "+sbCheckAck);
 		    	return false;
 		    }
 
@@ -335,15 +358,15 @@ public class HeadBusiness {
 		}
 	}
 
-	private static int checkAck(InputStream in) throws IOException{
+	private static String checkAck(InputStream in) throws IOException{
 		int b=in.read();
-		// b may be 0 for success,
+		// b may be 0 = NULL for success,
 		//          1 for error,
 		//          2 for fatal error,
 		//          -1
-		if(b==0) return b;
-		if(b==-1) return b;
-
+		if(b==0) return null;
+		if(b==-1) return null;
+		String msg = null; 
 		if(b==1 || b==2){
 			StringBuffer sb=new StringBuffer();
 			int c;
@@ -353,12 +376,12 @@ public class HeadBusiness {
 			}
 			while(c!='\n');
 			if(b==1){ // error
-				System.out.print(sb.toString());
+				msg = "Error: " + sb.toString();
 			}
 			if(b==2){ // fatal error
-				System.out.print(sb.toString());
+				msg = "Fatal error: "+ sb.toString();
 			}
 		}
-		return b;
+		return msg;
 	}
 }

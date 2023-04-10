@@ -63,7 +63,7 @@ INSERT INTO infomaquina(codigo,nome) values
   
   
 /**
-INSERT INTO maquina(codigo,nome,head,ignorar) values 
+INSERT INTO maquina(codigo,hostname,head,ignorar) values 
   (1,'Anguirel',true,false),(2,'Anglachel',false,false),
   (3,'Gurthang',false,false),(4,'Tiamat',false,true);
 
@@ -71,8 +71,8 @@ SELECT setval('maquina_codigo_seq', 4);
 
 INSERT INTO maquina_infomaquina(maquina_codigo,infomaquina_codigo,valor) values
   (1,1,'192.168.0.102'),(1,2,'lapfarsc'),(1,3,'senha'),(1,4,'8'),(1,5,'4'),(1,6,'/home/lapfarsc/Documentos/Guilherme/'),(1,7,'40'),(1,8,'/usr/'),(1,9,'/usr/local/mopac'),
-  (2,1,'192.168.0.108'),(2,2,'farmacia'),(2,3,'labsala18'),(2,4,'8'),(2,5,'8'),(2,6,'/home/farmacia/Documentos/Guilherme/'),(2,7,'50'),(2,8,'/usr/'),(2,9,'/usr/local/mopac'),
-  (3,1,'192.168.0.104'),(3,2,'farmacia'),(3,3,'labsala18'),(3,4,'12'),(3,5,'12'),(3,6,'/home/farmacia/Documentos/Guilherme/'),(3,7,'50'),(3,8,'/usr/'),(3,9,'/usr/local/mopac');
+  (2,1,'192.168.0.108'),(2,2,'farmacia'),(2,3,'labsala18'),(2,4,'8'),(2,5,'8'),(2,6,'/home/farmacia/Documentos/Guilherme/'),(2,7,'40'),(2,8,'/usr/'),(2,9,'/usr/local/mopac'),
+  (3,1,'192.168.0.104'),(3,2,'farmacia'),(3,3,'labsala18'),(3,4,'12'),(3,5,'12'),(3,6,'/home/farmacia/Documentos/Guilherme/'),(3,7,'40'),(3,8,'/usr/'),(3,9,'/usr/local/mopac');
   
 
 INSERT INTO maquina(codigo,hostname,head,ignorar) values
