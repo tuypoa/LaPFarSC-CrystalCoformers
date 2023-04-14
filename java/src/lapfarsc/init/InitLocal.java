@@ -92,13 +92,12 @@ public class InitLocal {
 								
 								//verificar comandos dessa maquina atraves do "ps aux"
 								//atualizar dados na tabela "labjob"
-								
+								slave.verificarListLabJob();
 								
 								if(ultimoStatusDTO.getIniciarJob()) {
-									//verificar CPU novamente (?)
+									//verificar CPU novamente (?), ultimo a verificar foi o HEAD
 									
 									slave.verificarFarmacoProtocolo();
-									
 								}
 							}else {
 								System.err.println("--> Slave sem javadeploy atualizado: "+hostname);		

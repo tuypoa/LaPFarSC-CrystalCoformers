@@ -154,8 +154,8 @@ if($desativar!=null){
 	if($farmaco_protocolo!=null){
 		?><div class="btn-toolbar mb-2 mb-md-0">
 			<div class="btn-group me-2">
-				<button type="button" class="btn btn-sm btn-outline-secondary">Arquivo </button>
-				<button type="button" class="btn btn-sm btn-outline-secondary">Ver em 3D</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary">Arquivo</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary">Em 3D</button>
 			</div>
 			<button type="button" class="btn btn-sm btn-outline-secondary" disabled>
 				<span class="bi-<?php echo $farmaco_protocolo["icon"]; ?>" class="align-text-bottom"></span>

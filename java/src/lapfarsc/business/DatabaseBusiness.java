@@ -12,10 +12,13 @@ import lapfarsc.dto.ArquivoDTO;
 import lapfarsc.dto.ComandoDTO;
 import lapfarsc.dto.FarmacoProtocoloDTO;
 import lapfarsc.dto.JavaDeployDTO;
+import lapfarsc.dto.LabJobDTO;
 import lapfarsc.dto.MaquinaDTO;
 import lapfarsc.dto.MaquinaInfoDTO;
 import lapfarsc.dto.MaquinaStatusDTO;
+import lapfarsc.dto.MsgDTO;
 import lapfarsc.dto.TarefaDTO;
+import lapfarsc.util.Dominios.TipoMensagemDTOEnum;
 
 public class DatabaseBusiness {
 	
@@ -243,15 +246,65 @@ public class DatabaseBusiness {
 	/*
 	 * TABELA labjob
 	 */	
-	
-	public void incluirLabJob(Integer jarLeituraCodigo, Integer tarefaCodigo, Integer comandoCodigo, String cmdLog, String relativeWorkpath) throws Exception {		
+	public List<LabJobDTO> selectListLabJobDTOMaquinaExecutando(Integer maquinaCodigo, Integer tipomsgFarmacoProcoloCodigo) throws Exception{
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT "
+					+ "  lj.codigo, lj.jarleitura_codigo, lj.tarefa_codigo, lj.comando_codigo, c.cmdtemplate, c.cmdprefixo, "
+					+ "	 lj.workpath, lj.comando, lj.jarleitura_verificado, lj.pid, "
+					+ "	 (NOT lj.interrompido IS NULL) as interrompido, lj.executando, (NOT lj.concluido IS NULL) as concluido, "
+					+ "	 lj.tipomsg_codigo, lj.msg "
+					+ " FROM farmaco_protocolo fp "
+					+ "	 INNER JOIN protocolo p ON p.codigo=fp.protocolo_codigo "
+					+ "	 INNER JOIN jarleitura jl ON jl.codigo=fp.jarleitura_codigo "
+					+ "	 INNER JOIN labjob lj ON lj.jarleitura_codigo=jl.codigo "
+					+ "	 INNER JOIN comando c ON c.codigo=lj.comando_codigo "
+					+ "  INNER JOIN maquinastatus ms ON jl.maquinastatus_codigo=ms.codigo "
+					+ " WHERE fp.tipomsg_codigo = ? AND ms.maquina_codigo = ? "
+					+ "	 AND NOT p.desativado AND lj.executando "
+					+ " ORDER BY lj.datahora ASC");
+			ps.setInt(1, tipomsgFarmacoProcoloCodigo);
+			ps.setInt(2, maquinaCodigo);
+			rs = ps.executeQuery();
+			List<LabJobDTO> listDTO = new ArrayList<LabJobDTO>();	
+			while(rs.next()){
+				LabJobDTO dto = new LabJobDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setJarLeituraCodigo(rs.getInt("jarleitura_codigo"));
+				dto.setTarefaCodigo(rs.getInt("tarefa_codigo"));
+				ComandoDTO cmdDTO = new ComandoDTO();
+				cmdDTO.setCodigo(rs.getInt("comando_codigo"));
+				cmdDTO.setTemplate(rs.getString("cmdtemplate"));
+				cmdDTO.setPrefixo(rs.getString("cmdprefixo"));
+				dto.setComandoDTO(cmdDTO);
+				dto.setComando(rs.getString("comando"));
+				dto.setWorkPath(rs.getString("workpath"));
+				dto.setJarLeituraCodigoVerificado(rs.getInt("jarleitura_verificado"));
+				dto.setPid(rs.getLong("pid")==0?null:rs.getLong("pid"));
+				dto.setInterrompido(rs.getBoolean("interrompido"));
+				dto.setExecutando(rs.getBoolean("executando"));
+				dto.setConcluido(rs.getBoolean("concluido"));
+				if(TipoMensagemDTOEnum.getByIndex(rs.getInt("tipomsg_codigo")) != null) {
+					dto.setMsgDTO(new MsgDTO(TipoMensagemDTOEnum.getByIndex(rs.getInt("tipomsg_codigo")), rs.getString("msg")));
+				}
+				listDTO.add(dto);
+			}	
+			return listDTO;
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+	}
+	public void incluirLabJob(Integer jarLeituraCodigo, Integer tarefaCodigo, Integer comandoCodigo, String cmdOK, String cmdLog, String relativeWorkpath) throws Exception {		
 		PreparedStatement ps = null;
 		try{
-			ps = conn.prepareStatement("INSERT INTO labjob(jarleitura_codigo,tarefa_codigo,comando_codigo,comandos,workpath) values (?,?,?,?,?)");
+			ps = conn.prepareStatement("INSERT INTO labjob(jarleitura_codigo,tarefa_codigo,comando_codigo,comando,comando_log,workpath) values (?,?,?,?,?,?)");
 			int p = 1;
 			ps.setInt(p++, jarLeituraCodigo);
 			ps.setInt(p++, tarefaCodigo);
 			ps.setInt(p++, comandoCodigo);
+			ps.setString(p++, cmdOK);
 			ps.setString(p++, cmdLog);
 			ps.setString(p++, relativeWorkpath);
 			ps.executeUpdate();
@@ -259,6 +312,43 @@ public class DatabaseBusiness {
 			if(ps!=null) ps.close();
 		}
 	}
+	public void updateLabJobDTOMsgDTO(LabJobDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE labjob SET jarleitura_verificado=?, pid=?, executando=?, "
+					+ "interrompido="+(dto.getInterrompido()==null || !dto.getInterrompido() ?"?":"CURRENT_TIMESTAMP")+", "
+					+ "concluido="+(dto.getConcluido()==null || !dto.getConcluido() ?"?":"CURRENT_TIMESTAMP")+", "
+					+" tipomsg_codigo=?, msg=? WHERE codigo=? ");
+			int p = 1;
+			ps.setInt(p++, dto.getJarLeituraCodigoVerificado());
+			if(dto.getPid()==null) {
+				ps.setNull(p++, Types.NULL);
+			}else{
+				ps.setLong(p++, dto.getPid());
+			}
+			ps.setBoolean(p++, dto.getExecutando());
+			if(dto.getInterrompido()==null || !dto.getInterrompido()) {
+				ps.setNull(p++, Types.NULL);
+			}
+			if(dto.getConcluido()==null || !dto.getConcluido()) {
+				ps.setNull(p++, Types.NULL);
+			}
+			if(dto.getMsgDTO()==null) {
+				ps.setNull(p++, Types.NULL);
+				ps.setNull(p++, Types.NULL);
+			}else {
+				ps.setInt(p++, dto.getMsgDTO().getTipo().getIndex());
+				ps.setString(p++, dto.getMsgDTO().getMsg());
+			}
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}	
+	
+	
+	
 	
 	/*
 	 * TABELA comando

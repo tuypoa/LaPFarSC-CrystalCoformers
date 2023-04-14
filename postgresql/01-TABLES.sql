@@ -1,4 +1,8 @@
 /*
+DROP TABLE farmaco_biblioteca;
+DROP TABLE biblioteca_coformador;
+DROP TABLE coformador;
+DROP TABLE tipocoformador;
 DROP TABLE farmaco_historico;
 DROP TABLE farmaco_protocolo;
 DROP TABLE farmaco_infofarmaco;
@@ -23,6 +27,7 @@ DROP TABLE infomaquina;
 DROP TABLE secao;
 DROP TABLE tipoinfo;
 DROP TABLE tipomsg;
+DROP TABLE biblioteca;
 */
 
 CREATE TABLE secao (
@@ -179,13 +184,14 @@ CREATE TABLE tipomsg (
   nome varchar(100) NOT NULL
 );
 
-CREATE TABLE labjob ( /* java cria os jobs diferentes cenarios: 3 jobs */
+CREATE TABLE labjob ( /* java cria os jobs diferentes bibliotecas: 3 jobs */
   codigo serial NOT NULL PRIMARY KEY,
   jarleitura_codigo integer NOT NULL REFERENCES jarleitura (codigo),
   tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
   comando_codigo integer NOT NULL REFERENCES comando (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  comandos text NOT NULL, 
+  comando varchar(150) NOT NULL,
+  comando_log text NOT NULL,
   workpath varchar(150) NOT NULL,
   jarleitura_verificado integer REFERENCES jarleitura (codigo), /** ps aux */
   pid bigint,
@@ -234,6 +240,45 @@ CREATE TABLE farmaco_historico (
   tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
   resultado_codigo int REFERENCES resultado (codigo)
+);
+
+
+CREATE TABLE biblioteca (
+  codigo int NOT NULL PRIMARY KEY,
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  tipo varchar(50) NOT NULL,
+  mopacinfo text,
+  rootpath varchar(50) NOT NULL,
+  desativado boolean NOT NULL DEFAULT FALSE 
+);
+
+CREATE TABLE farmaco_biblioteca (
+  farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
+  biblioteca_codigo int NOT NULL REFERENCES biblioteca (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  arquivo_codigo int NOT NULL REFERENCES arquivo (codigo),
+  PRIMARY KEY (farmaco_codigo, biblioteca_codigo)
+);
+
+CREATE TABLE tipocoformador (
+  codigo int NOT NULL PRIMARY KEY,
+  nome varchar(50) NOT NULL
+);
+
+CREATE TABLE coformador (
+  codigo serial NOT NULL PRIMARY KEY,
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  nome varchar(100) NOT NULL,
+  tipocoformador_codigo int NOT NULL REFERENCES tipocoformador (codigo),
+  arquivo_codigo int NOT NULL REFERENCES arquivo (codigo)  
+);
+
+CREATE TABLE biblioteca_coformador (
+  biblioteca_codigo int NOT NULL REFERENCES biblioteca (codigo),
+  coformador_codigo int NOT NULL REFERENCES coformador (codigo),
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  arquivo_codigo int NOT NULL REFERENCES arquivo (codigo),
+  PRIMARY KEY (biblioteca_codigo, coformador_codigo)
 );
 
 

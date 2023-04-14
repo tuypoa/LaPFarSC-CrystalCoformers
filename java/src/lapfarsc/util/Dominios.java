@@ -73,8 +73,9 @@ public class Dominios {
 	
 	public enum TipoMensagemDTOEnum{
 		OK(1),
-		ERRO(2),
-		EXCEPTION(3);
+		AVISO(2),
+		ERRO(3),
+		EXCEPTION(4);
 		int index;
 		TipoMensagemDTOEnum(int index){this.index=index;}
 		public int getIndex(){return this.index;}

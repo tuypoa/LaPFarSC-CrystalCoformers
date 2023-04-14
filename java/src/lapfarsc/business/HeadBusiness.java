@@ -178,7 +178,7 @@ public class HeadBusiness {
 		kwid = cabecalho.indexOf(kw);
 		if(kwid!=-1){
 			String usados = "usados";
-			if(cabecalho.indexOf("")==-1) {
+			if(cabecalho.indexOf(usados)==-1) {
 				usados = "used";
 			}
 			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf(usados,kwid+kw.length()) ).trim();
@@ -190,7 +190,7 @@ public class HeadBusiness {
 		kwid = cabecalho.indexOf(kw);
 		if(kwid!=-1){
 			String usados = "usados";
-			if(cabecalho.indexOf("")==-1) {
+			if(cabecalho.indexOf(usados)==-1) {
 				usados = "used";
 			}
 			String info = cabecalho.substring(kwid+kw.length(), cabecalho.indexOf(usados,kwid+kw.length()) ).trim();

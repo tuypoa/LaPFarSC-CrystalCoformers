@@ -37,22 +37,22 @@ INSERT INTO tipoinfo(codigo,nome) values
   (10, 'Identificadores'),(20, 'Físico-química');
 
 INSERT INTO infofarmaco(codigo,nome,tipoinfo_codigo) values 
-  (10, 'CSD Refcode',10),
-  (20, 'PubChem',10),
+  (10, 'PubChem CID',10),
+  (20, 'CSD Refcode',10),
   (30, 'Fórmula molecular',20);
 
 INSERT INTO tipoarquivo(codigo,nome) values 
   (1, 'Enviado'), (2, 'Otimizado MMFF94');
   
 INSERT INTO tipomsg(codigo,nome) values 
-  (1, 'OK'), (2, 'Erro'), (3,'Exception');
+  (1, 'OK'), (2, 'Aviso'), (3, 'Erro'), (4,'Exception');
   
 
 INSERT INTO comando(codigo,cmdtemplate,cmdprefixo) values  
   (1,'java -jar @JARPATH @ARG SLAVE &','java'),
   (2,'mpirun -np @NCPU pw.x -in @QEARQIN > @QEARQOUT &','mpirun'), 
   (3,'pw.x -in @QEARQIN > @QEARQOUT &','pw.x'),
-  (4,'molconvert -3:S{fine}[mmff94]L{3}[E] mol @INPUTFILE -o @OUTPUTFILE &','molconvert'),
+  (4,'molconvert -3:S{fine}[mmff94]L{3}[E] mol @INPUTFILE -o @OUTPUTFILE &','chemaxon.formats.MolConverter'),
   (5,'obabel -i@TYPEIN @INPUTFILE -o@TYPEOUT > @OUTPUTFILE','obabel'),
   (6,'mopac @INPUTFILE &','MOPAC2016.exe');
   
@@ -61,7 +61,16 @@ INSERT INTO infomaquina(codigo,nome) values
   (1,'IP'),(2,'Usuário'),(3,'Senha'),(4,'CPU Total'), 
   (5,'CPU MPI'),(6,'Root Work Path'),(7,'% CPU Ociosa'),(8,'JAVA_HOME'),(9,'MOPAC_HOME');
   
-  
+    
+INSERT INTO biblioteca(codigo,tipo,mopacinfo,rootpath) values 
+  (1,'CSD', null, 'biblioteca/coformers_CCDC/'),
+  (2,'PM6',' AUX LARGE CHARGE=0 EPS=78.4  PM6 precise','biblioteca/coformers_PM6/'),
+  (3,'PM7',' AUX LARGE CHARGE=0 SINGLET  PM7','biblioteca/coformers_PM7/');
+
+INSERT INTO tipocoformador(codigo,nome) values 
+  (1,'CSD GRaS'), (2,'Fármaco');
+
+
 /**
 INSERT INTO maquina(codigo,hostname,head,ignorar) values 
   (1,'Anguirel',true,false),(2,'Anglachel',false,false),
