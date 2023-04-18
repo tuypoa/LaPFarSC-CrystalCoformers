@@ -199,8 +199,8 @@ if($processo!=null){
         <div class="card">
             <div class="card-header text-nowrap text-bg-success"><?php echo ICON_TAREFA_P3; ?> Resultado</div>
             <div class="card-body text-success">
-              
                 <p class="card-text"><?php echo $historico["p3_inicio"]; ?> <br><?php echo $historico["p3_msg"]; ?></p>
+                <button type="button" class="btn btn-outline-success" onclick="">Detalhes</button>
             </div>
             <div class="card-footer text-nowrap <?php echo getStyleCardText($historico["p3_tipomsg"]); ?>"><i class='bi-<?php echo $historico["p3_tipomsg"]==TIPOMSG_OK?"check-lg":"x-circle-fill"; ?>'></i> <?php echo $historico["p3_fim"]; ?></div>
         </div>
