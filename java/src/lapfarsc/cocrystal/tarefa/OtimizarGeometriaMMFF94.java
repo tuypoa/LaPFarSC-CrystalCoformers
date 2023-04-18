@@ -10,19 +10,18 @@ import java.io.File;
 import java.io.InputStreamReader;
 
 import lapfarsc.business.TarefaBusiness;
-import lapfarsc.business.TarefaExec;
-import lapfarsc.dto.ArquivoDTO;
+import lapfarsc.business.CocrystalTarefaInterface;
 import lapfarsc.dto.ComandoDTO;
 import lapfarsc.dto.FarmacoProtocoloDTO;
+import lapfarsc.dto.FarmacoResultadoDTO;
 import lapfarsc.dto.LabJobDTO;
 import lapfarsc.dto.MsgDTO;
-import lapfarsc.dto.FarmacoResultadoDTO;
 import lapfarsc.util.Dominios.ComandoEnum;
 import lapfarsc.util.Dominios.InfoMaquinaEnum;
 import lapfarsc.util.Dominios.TipoArquivoEnum;
 import lapfarsc.util.Dominios.TipoMensagemDTOEnum;
 
-public class OtimizarGeometriaMMFF94 implements TarefaExec {
+public class OtimizarGeometriaMMFF94 implements CocrystalTarefaInterface {
 
 	private String filenameOutputPrincipal = "MMFF94.sdf";
 	

@@ -44,7 +44,7 @@ public class TarefaBusiness {
 		if(!tarefaDTO.getManual() && tarefaDTO.getJavaClass()!=null) {
 			try {
 				Class<?> cls = Class.forName(tarefaDTO.getJavaClass());
-				TarefaExec tarefaExec = (TarefaExec) cls.getDeclaredConstructor().newInstance();
+				CocrystalTarefaInterface tarefaExec = (CocrystalTarefaInterface) cls.getDeclaredConstructor().newInstance();
 				msgDTO = tarefaExec.prepararExecucao(this, farmacoProtocoloDTO);
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -73,7 +73,7 @@ public class TarefaBusiness {
 			if(!tarefaDTO.getManual() && tarefaDTO.getJavaClass()!=null) {
 				try {
 					Class<?> cls = Class.forName(tarefaDTO.getJavaClass());
-					TarefaExec tarefaExec = (TarefaExec) cls.getDeclaredConstructor().newInstance();
+					CocrystalTarefaInterface tarefaExec = (CocrystalTarefaInterface) cls.getDeclaredConstructor().newInstance();
 					labJobDTO = tarefaExec.verificarExecucao(this, labJobDTO);
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -94,7 +94,7 @@ public class TarefaBusiness {
 			if(!tarefaDTO.getManual() && tarefaDTO.getJavaClass()!=null) {
 				try {
 					Class<?> cls = Class.forName(tarefaDTO.getJavaClass());
-					TarefaExec tarefaExec = (TarefaExec) cls.getDeclaredConstructor().newInstance();
+					CocrystalTarefaInterface tarefaExec = (CocrystalTarefaInterface) cls.getDeclaredConstructor().newInstance();
 					resultadoDTO = tarefaExec.parseExecucao(this, resultadoDTO);
 				} catch (Exception e) {
 					e.printStackTrace();

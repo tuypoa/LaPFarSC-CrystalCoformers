@@ -5,7 +5,7 @@ import lapfarsc.dto.LabJobDTO;
 import lapfarsc.dto.MsgDTO;
 import lapfarsc.dto.FarmacoResultadoDTO;
 
-public interface TarefaExec {
+public interface CocrystalTarefaInterface {
 
 	public MsgDTO prepararExecucao(TarefaBusiness tb, FarmacoProtocoloDTO farmacoProtocoloDTO);
 	
