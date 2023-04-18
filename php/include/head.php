@@ -84,8 +84,11 @@ if($farmaco!=null) {
     <script src="include/3Dmol-min.js""></script>
 
     <script>
+		function loadEtapaFarmaco(id){
+			$("#etapa_load").load('ajax/get_farmaco_etapa.php?farid='+id);
+		}
 
-    function fdd(tipo,url){
-        window.location.href = url+'&dd='+tipo;
-    }
+        function fdd(tipo,url){
+            window.location.href = url+'&dd='+tipo;
+        }
     </script>

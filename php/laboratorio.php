@@ -17,16 +17,19 @@ require_once("config/configuracao.php");
         <?php
         $query = "
             SELECT m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online,
-                m.ignorar, ms.iniciarjob,
+                m.ignorar, ms.iniciarjob, (mi.valor > coalesce(ms.cpuused,mi.valor)) as ociosa,
                 TO_CHAR(ms.datahora,'DD/MM/YY HH24:MI:SS') AS ultimoacesso
             FROM maquina m
+                INNER JOIN (SELECT maquina_codigo, CAST(valor AS INTEGER) as valor 
+								FROM maquina_infomaquina WHERE infomaquina_codigo=".INFOMAQUINA_CPU_OCIOSA.") as mi
+					ON mi.maquina_codigo=m.codigo		
                 LEFT JOIN 
                     (SELECT MAX(codigo) as codigo, maquina_codigo 
                         FROM maquinastatus 
                         GROUP BY maquina_codigo) maxms ON m.codigo=maxms.maquina_codigo
                 LEFT JOIN maquinastatus ms ON maxms.codigo=ms.codigo		
             GROUP BY m.codigo, m.hostname, ms.cpuused, ms.memused, ms.online, 
-                m.ignorar, ms.iniciarjob, ms.datahora
+                m.ignorar, ms.iniciarjob, ms.datahora, mi.valor
             ORDER BY ms.online, m.hostname
             ";
 
@@ -39,20 +42,20 @@ require_once("config/configuracao.php");
                 
                 ?>
                 <div class="col">
-                    <div class="card border-<?php echo $obj["online"]?"success":"danger";?>" >
-                    <div class="card-header"><?php echo $obj["hostname"]; ?></div>
-                    <div class="card-body text-<?php echo $obj["online"]?"success":"danger";?>">
-                        <p class="card-text">
+                    <div class="card text-bg-light" >   
+                    <div class="card-body">
+                        <h5 class="card-title"><?php echo $obj["hostname"]; ?></h5>
+                        <h6 class="card-subtitle mb-2 text-muted"><?php echo $obj["ultimoacesso"]; ?></h6>
                         <?php
-                            echo "<span style='color:".($obj["online"]?(!$obj["ignorar"] && ($obj["cpuused"] <50 || $obj["ociosa"])?"red":"blue"):"#666666").";font-size:14px;font-weight:bold;'>".$obj["cpuused"]."% cpu</span><br>";
-                            echo "<span style='color:".($obj["online"]?"green":"#666666").";font-size:13px;'>".$obj["memused"]."% Mem</span><br>";
-                            echo "<span style='font-size:12px;'>".$obj["ultimoacesso"]."</span><br>";
+                            echo "<h6 class='card-title text-".($obj["online"]?(!$obj["ignorar"] && ($obj["ociosa"])?"danger":"primary"):"secondary")."'>".$obj["cpuused"]."% cpu</h6>";
+                            echo "<p class='card-text text-success'>".$obj["memused"]."% Mem</p>";
+                            
                         ?>
-                        </p>
+                        
                         <?php if(false && !$obj["ignorar"]){ ?>
                             <img src="graph/graph_maquina_mini.php?mid=<?php echo $obj["codigo"]; ?>&o=<?php echo $obj["ociosa"]?"1":"0"; ?>" class="img-responsive" style="width:100%" />
                         <?php } ?></div>
-                    <div class="card-footer text-muted"><?php echo ($obj["online"]?($obj["iniciarjob"]?"Autorizada a iniciar processo...":"Online"):"<span class='bi-alert'></span>  Offline"); ?></div>
+                    <div class="card-footer text-<?php echo $obj["online"]?"primary":"danger";?>"><?php echo ($obj["online"]?($obj["iniciarjob"]?"Dispon&iacute;vel":"Online"):"<span class='bi-alert'></span>  Offline"); ?></div>
                 </div>
                 </div>
                 <?php			
@@ -66,11 +69,23 @@ require_once("config/configuracao.php");
         ?>
     
         <div class="col"> 
-            <div class="card border-primary">
-                <div class="card-header">Database</div>
-                <div class="card-body text-primary">
-                    <p class="card-text">
+            <div class="card text-bg-light">
+               <div class="card-body">
+                    <h5 class="card-title">Database</h5>
                     <?php
+                        $query = "SELECT hostname FROM maquina WHERE head";
+                        $stBusca = $con->prepare($query);	
+                        $stBusca->execute();
+                        $rsBusca = $stBusca->fetchAll(PDO::FETCH_ASSOC);
+                        if(sizeof($rsBusca)>0){
+                            ?><h6 class="card-subtitle mb-2 text-muted"><?php echo $rsBusca[0]["hostname"]; ?></h6><?php
+                        }
+                        unset($rsBusca);
+                        $rsBusca = null;
+                        $stBusca->closeCursor();
+                    ?>
+                    
+                     <?php
                         $query = "SELECT 
                             pg_size_pretty(pg_database_size('".Ambiente::$dbase."')) as tam,
                             table_name, 
@@ -86,17 +101,18 @@ require_once("config/configuracao.php");
                         $rsBusca = $stBusca->fetchAll(PDO::FETCH_ASSOC);
                         if(sizeof($rsBusca)>0){
                             $dbsize = $rsBusca[0];
-                            echo "<span style='font-size:13px;'>Total: ".$dbsize["tam"]."</span><br>";
+                            echo "<div class='row'><div class='col text-primary'>Total</div><div class='col text-primary text-end'>".$dbsize["tam"]."</div></div>";
+                            echo "";
                             foreach ($rsBusca as $obj){	
-                                echo "<span style='color:#666666;font-size:12px;'>&nbsp; ".$obj["table_name"].": ".$obj["tamtb"]."</span><br>";
+                                echo "<div class='row'><div class='col text-secondary'><small>".$obj["table_name"]."</small></div><div class='col text-secondary text-end'><small>".$obj["tamtb"]."</small></div></div>";
                             }
+                            echo "";
                         }
                         unset($rsBusca);
                         $rsBusca = null;
                         $stBusca->closeCursor();
-                    ?></p>
+                    ?>
                 </div>
-                <div class="card-footer text-muted">Online</div>
             </div>
         </div>
         

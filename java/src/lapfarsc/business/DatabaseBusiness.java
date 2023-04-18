@@ -11,6 +11,7 @@ import java.util.List;
 import lapfarsc.dto.ArquivoDTO;
 import lapfarsc.dto.ComandoDTO;
 import lapfarsc.dto.FarmacoProtocoloDTO;
+import lapfarsc.dto.FarmacoResultadoDTO;
 import lapfarsc.dto.JavaDeployDTO;
 import lapfarsc.dto.LabJobDTO;
 import lapfarsc.dto.MaquinaDTO;
@@ -145,7 +146,31 @@ public class DatabaseBusiness {
 		}
 		return null;
 	}
-	
+	public TarefaDTO selectTarefaDTOProxima(Integer tarefaAtualCodigo) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT t.codigo "+
+							" FROM tarefa t "+
+							" 	INNER JOIN etapa e ON t.etapa_codigo=e.codigo "+
+							" 	INNER JOIN protocolo p ON e.protocolo_codigo=p.codigo "+
+							" WHERE NOT p.desativado "+
+							" ORDER BY e.ordem ASC, t.ordem ASC");
+			rs = ps.executeQuery();			
+			while(rs.next()){
+				if(tarefaAtualCodigo == rs.getInt("codigo")) {
+					if(!rs.isLast()) {
+						rs.next();
+						return selectTarefaDTO( rs.getInt("codigo") );
+					}
+				}				
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
 	
 	/*
 	 * TABELA maquinastatus
@@ -234,13 +259,122 @@ public class DatabaseBusiness {
 				ps.setInt(p++, javaDeployCodigo);
 				ps.setInt(p++, dto.getCodigo());
 				ps.executeUpdate();
-			
 			}
 		}finally{
 			if(ps!=null) ps.close();
 		}
 	}
+	
+	
+	
+	/*
+	 * TABELA arquivo
+	 */
+	public ArquivoDTO selectArquivoDTO(Integer codigo) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT codigo,filename,hash,conteudo FROM arquivo WHERE codigo=?");
+			ps.setInt(1, codigo);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				ArquivoDTO dto = new ArquivoDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setFilename(rs.getString("filename"));
+				dto.setHash(rs.getString("hash"));
+				dto.setConteudo(rs.getString("conteudo"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+	public ArquivoDTO selectArquivoDTOByHash(String hash) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT codigo,filename,hash FROM arquivo WHERE hash LIKE ?");
+			ps.setString(1, hash);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				ArquivoDTO dto = new ArquivoDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setFilename(rs.getString("filename"));
+				dto.setHash(rs.getString("hash"));
+				//dto.setConteudo(rs.getString("conteudo"));
+				return dto;
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+	public Integer incluirArquivoDTO(ArquivoDTO arquivoDTO) throws Exception {		
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO arquivo(filename,hash,conteudo) values (?,?,?)");
+			int p = 1;
+			ps.setString(p++, arquivoDTO.getFilename());
+			ps.setString(p++, arquivoDTO.getHash());
+			ps.setString(p++, arquivoDTO.getConteudo());
+			ps.executeUpdate();
+			ps.close();
+			
+			ps = conn.prepareStatement("SELECT codigo FROM arquivo WHERE hash LIKE ? ORDER BY datahora DESC LIMIT 1");
+			ps.setString(1, arquivoDTO.getHash());
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				return rs.getInt("codigo");
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
 
+
+	/*
+	 * TABELA farmaco_arquivo
+	 */	
+	public Integer selectFarmacoArquivoCodigo(Integer farmacoCodigo, Integer arquivoCodigo, Integer tipoCodigo) throws Exception {
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT arquivo_codigo FROM farmaco_arquivo "
+					+ " WHERE farmaco_codigo=? AND arquivo_codigo=? AND tipoarquivo_codigo=?");
+			int p = 1;
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, arquivoCodigo);
+			ps.setInt(p++, tipoCodigo);
+			rs = ps.executeQuery();			
+			if(rs.next()){
+				return rs.getInt("arquivo_codigo");
+			}			
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
+	public void incluirFarmacoArquivo(Integer farmacoCodigo, Integer arquivoCodigo, Integer tipoCodigo) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO farmaco_arquivo(farmaco_codigo,arquivo_codigo,tipoarquivo_codigo) values (?,?,?)");
+			int p = 1;
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, arquivoCodigo);
+			ps.setInt(p++, tipoCodigo);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+	
 	
 
 	/*
@@ -557,6 +691,33 @@ public class DatabaseBusiness {
 		}
 		return null;
 	}
+	public FarmacoProtocoloDTO selectFarmacoProtocoloDTOByLabJob(Integer tarefaCodigo, Integer jarLeituraCodigo) throws Exception {	
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT fp.farmaco_codigo,fp.protocolo_codigo,fp.etapa_codigo,fp.tarefa_codigo,fp.jarleitura_codigo "+
+								" FROM farmaco_protocolo fp "+
+								"    INNER JOIN farmaco f ON f.codigo=fp.farmaco_codigo "+
+								"    INNER JOIN protocolo p ON p.codigo=fp.protocolo_codigo "+
+								" WHERE fp.tarefa_codigo = ? AND fp.jarleitura_codigo = ? AND NOT f.desativado AND NOT p.desativado ");
+			ps.setInt(1, tarefaCodigo);
+			ps.setInt(2, jarLeituraCodigo);
+			rs = ps.executeQuery();
+			if(rs.next()){
+				FarmacoProtocoloDTO dto = new FarmacoProtocoloDTO();
+				dto.setFarmacoCodigo(rs.getInt("farmaco_codigo"));
+				dto.setProtocoloCodigo(rs.getInt("protocolo_codigo"));
+				dto.setEtapaCodigo(rs.getInt("etapa_codigo"));
+				dto.setTarefaCodigo(rs.getInt("tarefa_codigo"));
+				dto.setJarLeituraCodigo(rs.getInt("jarleitura_codigo"));
+				return dto;
+			}	
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+		return null;
+	}
 	public void updateFarmacoProtocoloDTOJarLeitura(FarmacoProtocoloDTO dto) throws Exception {		
 		PreparedStatement ps = null;
 		try{
@@ -595,6 +756,119 @@ public class DatabaseBusiness {
 			if(ps!=null) ps.close();
 		}
 	}
+	public void updateFarmacoProtocoloProximaTarefa(Integer farmacoCodigo, Integer protocoloCodigo, Integer etapaCodigo, Integer tarefaCodigo) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE farmaco_protocolo SET etapa_codigo=?,tarefa_codigo=?,disponivel=CURRENT_TIMESTAMP,jarleitura_codigo=NULL,tipomsg_codigo=NULL,msg=NULL WHERE farmaco_codigo=? AND protocolo_codigo=?");
+			int p = 1;
+			ps.setInt(p++, etapaCodigo);
+			ps.setInt(p++, tarefaCodigo);
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, protocoloCodigo);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
 	
+	
+	/*
+	 * TABELA farmaco_historico
+	 */	
+	public void incluirFarmacoHistorico(Integer farmacoCodigo, Integer protocoloCodigo, Integer etapaCodigo, Integer tarefaCodigo, Integer jarLeituraCodigo, Integer resultadoCodigo ) throws Exception{
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO farmaco_historico(farmaco_codigo, protocolo_codigo, etapa_codigo, "
+					+ " tarefa_codigo, jarleitura_codigo, farmaco_resultado_codigo, datainicio) "
+					+ " values (?,?,?,?,?,?, (SELECT disponivel FROM farmaco_protocolo WHERE farmaco_codigo=? AND protocolo_codigo=?) )");
+			int p = 1;
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, protocoloCodigo);
+			ps.setInt(p++, etapaCodigo);
+			ps.setInt(p++, tarefaCodigo);
+			ps.setInt(p++, jarLeituraCodigo);
+			ps.setInt(p++, resultadoCodigo);
+			
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, protocoloCodigo);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+
+	/*
+	 * TABELA farmaco_resultado
+	 */	
+	public List<FarmacoResultadoDTO> selectListFarmacoResultadoDTONaoDigerido(Integer jarLeituraCodigo) throws Exception {	
+		PreparedStatement ps = null;
+		ResultSet rs = null;
+		try{
+			ps = conn.prepareStatement("SELECT r.codigo,r.farmaco_codigo,r.protocolo_codigo,r.tarefa_codigo, r.labjob_codigo, r.jarleitura_codigo,r.resultpath,r.tipomsg_codigo,r.msg "+
+								" FROM farmaco_resultado r "+
+								"    INNER JOIN farmaco f ON f.codigo=r.farmaco_codigo "+
+								"    INNER JOIN protocolo p ON p.codigo=r.protocolo_codigo "+
+								" WHERE r.jarleitura_codigo = ? AND r.digerido IS NULL AND r.tipomsg_codigo IS NULL AND NOT f.desativado AND NOT p.desativado "+
+								" ORDER BY r.datahora ASC ");
+			ps.setInt(1, jarLeituraCodigo);
+			rs = ps.executeQuery();
+			List<FarmacoResultadoDTO> listDTO = new ArrayList<FarmacoResultadoDTO>();	
+			while(rs.next()){
+				FarmacoResultadoDTO dto = new FarmacoResultadoDTO();
+				dto.setCodigo(rs.getInt("codigo"));
+				dto.setFarmacoCodigo(rs.getInt("farmaco_codigo"));
+				dto.setProtocoloCodigo(rs.getInt("protocolo_codigo"));
+				dto.setTarefaCodigo(rs.getInt("tarefa_codigo"));
+				dto.setLabJobCodigo(rs.getInt("labjob_codigo"));
+				dto.setJarLeituraCodigo(rs.getInt("jarleitura_codigo"));
+				dto.setResultPath(rs.getString("resultpath"));
+				dto.setDigerido(Boolean.FALSE);
+				if(TipoMensagemDTOEnum.getByIndex(rs.getInt("tipomsg_codigo")) != null) {
+					dto.setMsgDTO(new MsgDTO(TipoMensagemDTOEnum.getByIndex(rs.getInt("tipomsg_codigo")), rs.getString("msg")));
+				}
+				listDTO.add(dto);
+			}	
+			return listDTO;
+		}finally{
+			if(rs!=null) rs.close();
+			if(ps!=null) ps.close();
+		}
+	}
+	public void incluirFarmacoResultado(Integer farmacoCodigo, Integer protocoloCodigo, Integer tarefaCodigo, Integer labJobCodigo, Integer jarLeituraCodigo, String relativeWorkpath) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("INSERT INTO farmaco_resultado(farmaco_codigo, protocolo_codigo, tarefa_codigo, labjob_codigo, jarleitura_codigo, resultpath) values (?,?,?,?,?,?)");
+			int p = 1;
+			ps.setInt(p++, farmacoCodigo);
+			ps.setInt(p++, protocoloCodigo);
+			ps.setInt(p++, tarefaCodigo);
+			ps.setInt(p++, labJobCodigo);
+			ps.setInt(p++, jarLeituraCodigo);
+			ps.setString(p++, relativeWorkpath);
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
+	public void updateFarmacoResultadoDTOMsgDTO(FarmacoResultadoDTO dto) throws Exception {		
+		PreparedStatement ps = null;
+		try{
+			ps = conn.prepareStatement("UPDATE farmaco_resultado SET tipomsg_codigo=?,msg=SUBSTRING(? from 1 for 150), digerido="+
+											(dto.getDigerido()?"CURRENT_TIMESTAMP":"NULL")+
+											" WHERE codigo=? ");
+			int p = 1;
+			if(dto.getMsgDTO()==null) {
+				ps.setNull(p++, Types.NULL);
+				ps.setNull(p++, Types.NULL);
+			}else {
+				ps.setInt(p++, dto.getMsgDTO().getTipo().getIndex());
+				ps.setString(p++, dto.getMsgDTO().getMsg()==null?"":dto.getMsgDTO().getMsg());
+			}
+			ps.setInt(p++, dto.getCodigo());
+			ps.executeUpdate();
+		}finally{
+			if(ps!=null) ps.close();
+		}
+	}
 	
 }

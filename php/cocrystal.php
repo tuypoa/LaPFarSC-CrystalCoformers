@@ -9,10 +9,11 @@ require_once("config/configuracao.php");
 <?php include_once 'include/menu.php'; ?>
 
 <?php 
-$query = "SELECT p.codigo, p.nome, p.versao
+$query = "SELECT p.codigo, p.nome, p.versao, s.icon
 		FROM protocolo p
-		WHERE p.secao_codigo = :secaoid AND NOT desativado
-        ORDER BY datahora DESC LIMIT 1 ";
+            INNER JOIN secao s ON s.codigo=p.secao_codigo
+		WHERE s.codigo = :secaoid AND NOT p.desativado
+        ORDER BY p.datahora DESC LIMIT 1 ";
 $stBusca = $con->prepare($query);	
 $stBusca->bindParam(':secaoid', $secao["codigo"], PDO::PARAM_INT);
 $stBusca->execute();
@@ -30,7 +31,10 @@ $stBusca->closeCursor();
 <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
     <h1 class="h3"><?php echo $protocolo["nome"]; ?></h1>    
     <div class="btn-toolbar mb-2 mb-md-0">
-        <span style="color:#999999;">Protocolo <?php echo $protocolo["versao"]; ?></span>
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled>
+            <span class="bi-<?php echo $protocolo["icon"]; ?>" class="align-text-bottom"></span>
+            Protocolo <?php echo $protocolo["versao"]; ?>
+        </button>
     </div>
 </div>
 

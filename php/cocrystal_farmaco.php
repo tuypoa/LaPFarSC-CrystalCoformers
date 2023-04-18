@@ -154,7 +154,7 @@ if($desativar!=null){
 	if($farmaco_protocolo!=null){
 		?><div class="btn-toolbar mb-2 mb-md-0">
 			<div class="btn-group me-2">
-				<button type="button" class="btn btn-sm btn-outline-secondary">Arquivo</button>
+				<button type="button" class="btn btn-sm btn-outline-secondary">Arquivo <?php echo htmlspecialchars($farmaco["filename"]); ?></button>
 				<button type="button" class="btn btn-sm btn-outline-secondary">Em 3D</button>
 			</div>
 			<button type="button" class="btn btn-sm btn-outline-secondary" disabled>
@@ -310,14 +310,37 @@ if($farmaco_protocolo == null){
 }else{
 	?>
 	<div class="row">
-		<div class="col-sm-12">
-			
-
-			<div class="spinner-border spinner-border-sm text-primary" role="status">
-				<span class="visually-hidden">Loading...</span>
+		<div class="col-sm-12" id="etapa_load">
+		<h5><span class="placeholder col-2 bg-secondary"></span></h5>
+		
+		<div class="accordion p-3" id="accordionPanels">
+			<div class="accordion-item">
+				<h2 class="accordion-header" id="panelsStayOpen-headingTwo">
+				<button class="accordion-button placeholder-glow" type="button" data-bs-toggle="collapse" data-bs-target="#panelsStayOpen-collapseTwo" aria-expanded="false" aria-controls="panelsStayOpen-collapseTwo">
+					<span class="placeholder col-2"></span>
+				</button>
+				</h2>
+				<div id="panelsStayOpen-collapseTwo" class="accordion-collapse collapse show" aria-labelledby="panelsStayOpen-headingTwo">
+				<div class="accordion-body">
+					<p class="card-text placeholder-glow">
+					<span class="placeholder col-7 bg-secondary"></span>
+					<span class="placeholder col-4 bg-secondary"></span>
+					<span class="placeholder col-4 bg-secondary"></span>
+					<span class="placeholder col-6 bg-secondary"></span>
+					<span class="placeholder col-8 bg-secondary"></span>
+					</p>
+				</div>
+				</div>
 			</div>
 		</div>
+
+		</div>
 	</div>
+	<script>
+		$(document).ready(function () {
+			loadEtapaFarmaco('<?php echo $farmaco["codigo"]; ?>');
+		});
+	</script>
 	<?php 
 }
 ?>

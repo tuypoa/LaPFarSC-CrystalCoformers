@@ -9,7 +9,7 @@ DROP TABLE farmaco_infofarmaco;
 DROP TABLE farmaco_arquivo;
 DROP TABLE tipoarquivo;
 DROP TABLE arquivo;
-DROP TABLE resultado;
+DROP TABLE farmaco_resultado;
 DROP TABLE farmaco;
 DROP TABLE labjob;
 DROP TABLE tarefa;
@@ -66,6 +66,7 @@ CREATE TABLE tarefa (
   ordem integer NOT NULL,
   manual boolean NOT NULL DEFAULT FALSE,
   javaclass varchar(100),
+  software varchar(50),
   etapa_codigo integer NOT NULL REFERENCES etapa (codigo),
   tarefa_codigo integer REFERENCES tarefa (codigo)
 );
@@ -184,7 +185,7 @@ CREATE TABLE tipomsg (
   nome varchar(100) NOT NULL
 );
 
-CREATE TABLE labjob ( /* java cria os jobs diferentes bibliotecas: 3 jobs */
+CREATE TABLE labjob ( 
   codigo serial NOT NULL PRIMARY KEY,
   jarleitura_codigo integer NOT NULL REFERENCES jarleitura (codigo),
   tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
@@ -202,13 +203,14 @@ CREATE TABLE labjob ( /* java cria os jobs diferentes bibliotecas: 3 jobs */
   msg varchar(150)
 );
 
-/* java verifica se os 3 jobs foram concluidos para tarefa ser dada como completada */
-CREATE TABLE resultado ( 
+
+CREATE TABLE farmaco_resultado ( 
   codigo serial NOT NULL PRIMARY KEY ,
   farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
   protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
   tarefa_codigo integer NOT NULL REFERENCES tarefa (codigo),
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
+  labjob_codigo int NOT NULL REFERENCES labjob (codigo),
   datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   resultpath varchar(150) NOT NULL,
   digerido timestamp,
@@ -233,13 +235,14 @@ CREATE TABLE farmaco_protocolo (
 
 CREATE TABLE farmaco_historico (
   codigo serial NOT NULL PRIMARY KEY,
-  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+  datahora timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   farmaco_codigo int NOT NULL REFERENCES farmaco (codigo),
   protocolo_codigo int NOT NULL REFERENCES protocolo (codigo),
   etapa_codigo int NOT NULL REFERENCES etapa (codigo),
   tarefa_codigo int NOT NULL REFERENCES tarefa (codigo),
   jarleitura_codigo int NOT NULL REFERENCES jarleitura (codigo),
-  resultado_codigo int REFERENCES resultado (codigo)
+  farmaco_resultado_codigo int NOT NULL REFERENCES farmaco_resultado (codigo),
+  datainicio timestamp NOT NULL
 );
 
 

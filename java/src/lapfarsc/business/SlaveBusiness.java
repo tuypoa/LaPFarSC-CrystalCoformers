@@ -11,12 +11,14 @@ import lapfarsc.dto.MaquinaDTO;
 public class SlaveBusiness {
 	
 	private DatabaseBusiness db = null;
+	private TarefaBusiness tb = null;
 	private MaquinaDTO maquinaDTO = null;
 	private Integer jarLeituraCodigo = null;
 	
 	public SlaveBusiness(DatabaseBusiness db, MaquinaDTO maquinaDTO) throws Exception{
 		this.db = db;
 		this.maquinaDTO = maquinaDTO;
+		this.tb = new TarefaBusiness(db, maquinaDTO);
 	}
 
 	public void gravarJarLeitura(Integer maquinaStatusCodigo) throws Exception {				
@@ -30,15 +32,19 @@ public class SlaveBusiness {
 			//atualizar jarleitura em farmaco_protocolo / pegar o ticket
 			farmacoProtocoloDTO.setJarLeituraCodigo(jarLeituraCodigo);
 			db.updateFarmacoProtocoloDTOJarLeitura(farmacoProtocoloDTO);
-			//buscar tarefa 
-			TarefaBusiness tb = new TarefaBusiness(db, maquinaDTO);
+			//buscar tarefa
+			
 			tb.iniciarProcessoAutomatico(farmacoProtocoloDTO);
 		}
 	}
 	
 	public void verificarListLabJob() throws Exception {
-		TarefaBusiness tb = new TarefaBusiness(db, maquinaDTO);
 		tb.verificarProcessosAutomaticos(jarLeituraCodigo);
 	}
+	
+	public void verificarListResultado() throws Exception {
+		tb.verificarResultados(jarLeituraCodigo);
+	}
+	
 }
 

@@ -94,6 +94,9 @@ public class InitLocal {
 								//atualizar dados na tabela "labjob"
 								slave.verificarListLabJob();
 								
+								//atualizar dados na tabela "resultados"
+								slave.verificarListResultado();
+								
 								if(ultimoStatusDTO.getIniciarJob()) {
 									//verificar CPU novamente (?), ultimo a verificar foi o HEAD
 									

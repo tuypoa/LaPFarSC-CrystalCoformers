@@ -11,10 +11,12 @@ import java.io.InputStreamReader;
 
 import lapfarsc.business.TarefaBusiness;
 import lapfarsc.business.TarefaExec;
+import lapfarsc.dto.ArquivoDTO;
 import lapfarsc.dto.ComandoDTO;
 import lapfarsc.dto.FarmacoProtocoloDTO;
 import lapfarsc.dto.LabJobDTO;
 import lapfarsc.dto.MsgDTO;
+import lapfarsc.dto.FarmacoResultadoDTO;
 import lapfarsc.util.Dominios.ComandoEnum;
 import lapfarsc.util.Dominios.InfoMaquinaEnum;
 import lapfarsc.util.Dominios.TipoArquivoEnum;
@@ -77,7 +79,7 @@ public class OtimizarGeometriaMMFF94 implements TarefaExec {
 					cmdDTO = tb.obterComandoDTO(ComandoEnum.MOLCONVERT_MMFF94_FINE);
 					cmdTemplate = cmdDTO.getTemplate();
 					cmdTemplate = cmdTemplate.replace("@INPUTFILE", outputFile);
-					cmdTemplate = cmdTemplate.replace("@OUTPUTFILE", "id"+farmacoProtocoloDTO.getJarLeituraCodigo()+"-"+filenameOutputPrincipal );
+					cmdTemplate = cmdTemplate.replace("@OUTPUTFILE", "tarefa-"+farmacoProtocoloDTO.getTarefaCodigo()+"-"+filenameOutputPrincipal );
 					String comandoPrincipal = cmdTemplate;
 					
 					cmdLog.append("$").append(comandoPrincipal);//.append("\n");
@@ -154,7 +156,7 @@ public class OtimizarGeometriaMMFF94 implements TarefaExec {
 				File workPath = new File(root, labJobDTO.getWorkPath());
 				if(workPath.exists()) {
 					//verificar se foi interrompido ou concluido
-					File outFile = new File(workPath, "id"+labJobDTO.getJarLeituraCodigo()+"-"+filenameOutputPrincipal);
+					File outFile = new File(workPath, "tarefa-"+labJobDTO.getTarefaCodigo()+"-"+filenameOutputPrincipal);
 					if(!outFile.exists() || outFile.length()==0) {
 						labJobDTO.setInterrompido(Boolean.TRUE);
 						labJobDTO.setConcluido(Boolean.FALSE);
@@ -163,6 +165,8 @@ public class OtimizarGeometriaMMFF94 implements TarefaExec {
 						labJobDTO.setInterrompido(Boolean.FALSE);
 						labJobDTO.setConcluido(Boolean.TRUE);
 						labJobDTO.setMsgDTO( new MsgDTO(TipoMensagemDTOEnum.OK, null) );
+						//criar registro em "resultado"
+						tb.incluirResultadoFarmacoProtocolo(labJobDTO);
 					}
 				}else {
 					labJobDTO.setMsgDTO( new MsgDTO(TipoMensagemDTOEnum.ERRO, "Job-workpath not found.") );
@@ -178,23 +182,36 @@ public class OtimizarGeometriaMMFF94 implements TarefaExec {
 	}
 
 	@Override
-	public MsgDTO parseExecucao(TarefaBusiness tb) {
+	public FarmacoResultadoDTO parseExecucao(TarefaBusiness tb, FarmacoResultadoDTO resultadoDTO) {
 		System.out.println("> Tarefa<OtimizarGeometriaMMFF94>.parseExecucao();");
-		MsgDTO msgDTO = null;
 		try {
+			resultadoDTO.setDigerido(Boolean.FALSE);
+			
 			//fazer a digestao dos arquivos
-			
-			
-			//atualizar dados em "labjob": jarleitura_verificado, executando, concluido,
-		
-		
+			File root = tb.getRootWorkPathMaquina(resultadoDTO.getTarefaCodigo());
+			File workPath = new File(root, resultadoDTO.getResultPath());
+			if(workPath.exists()) {
+				File outFile = new File(workPath, "tarefa-"+resultadoDTO.getTarefaCodigo()+"-"+filenameOutputPrincipal);
+				//incluir arquivo no banco de dados, tipoarquivo = 2 = TipoArquivoEnum.OTIMIZADO_MMFF94
+				tb.incluirFarmacoArquivo(resultadoDTO.getFarmacoCodigo(), TipoArquivoEnum.OTIMIZADO_MMFF94, outFile);
+				
+				//atualizar dados em "resultado": digerido, tipomsg
+				resultadoDTO.setDigerido(Boolean.TRUE);
+				resultadoDTO.setMsgDTO( new MsgDTO(TipoMensagemDTOEnum.OK, null) );
+				
+				//gravar farmaco_historico e atualizar farmaco_protocolo com proxima tarefa
+				tb.incluirFarmacoHistorico(resultadoDTO);
+				
+			}else {
+				resultadoDTO.setMsgDTO( new MsgDTO(TipoMensagemDTOEnum.ERRO, "Job-resultpath not found.") );
+			}
 		}catch (Throwable e) {
-			msgDTO = tb.getMsgDTOException(e);
+			resultadoDTO.setMsgDTO( tb.getMsgDTOException(e) );
 		}
-		if(msgDTO==null) {
-			msgDTO = new MsgDTO(TipoMensagemDTOEnum.ERRO, "Desconhecido: "+this.getClass().getName());
+		if(resultadoDTO.getMsgDTO()==null) {
+			resultadoDTO.setMsgDTO( new MsgDTO(TipoMensagemDTOEnum.ERRO, "Desconhecido: "+this.getClass().getName()) );
 		}
-		return msgDTO;
+		return resultadoDTO;
 	}
 
 
